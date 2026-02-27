@@ -3,8 +3,6 @@ import axios from 'axios'
 import { jwtDecode } from 'jwt-decode'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-
-// === AQUI ESTÁ A SUA LOGO ===
 import logoImg from './assets/logo_Globalnet.png'
 
 function App() {
@@ -58,7 +56,7 @@ function App() {
 
   const handleLogin = (e) => {
     e.preventDefault()
-    axios.post('http://127.0.0.1:8000/api/token/', { username, password })
+    axios.post('https://api-ti-relatorios.onrender.com/api/token/', { username, password })
     .then(response => {
       const accessToken = response.data.access
       const decoded = jwtDecode(accessToken)
@@ -78,7 +76,7 @@ function App() {
 
   useEffect(() => {
     if (token) {
-      axios.get('http://127.0.0.1:8000/api/relatorios/', { headers: { Authorization: `Bearer ${token}` } })
+      axios.get('https://api-ti-relatorios.onrender.com/api/relatorios/', { headers: { Authorization: `Bearer ${token}` } })
       .then(response => {
         const dados = response.data.results ? response.data.results : response.data;
         setRelatorios(dados);
@@ -90,7 +88,7 @@ function App() {
   }, [token, isStaff])
 
   const buscarUsuarios = () => {
-    axios.get('http://127.0.0.1:8000/api/usuarios/', { headers: { Authorization: `Bearer ${token}` } })
+    axios.get('https://api-ti-relatorios.onrender.com/api/usuarios/', { headers: { Authorization: `Bearer ${token}` } })
     .then(response => setUsuarios(response.data))
     .catch(error => console.error(error))
   }
@@ -101,12 +99,12 @@ function App() {
     if (novaSenha) payload.password = novaSenha
 
     if (editandoUsuarioId) {
-      axios.put(`http://127.0.0.1:8000/api/usuarios/${editandoUsuarioId}/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+      axios.put(`https://api-ti-relatorios.onrender.com/api/usuarios/${editandoUsuarioId}/`, payload, { headers: { Authorization: `Bearer ${token}` } })
       .then(response => { alert("Usuário atualizado com sucesso!"); limparFormularioUsuario(); buscarUsuarios(); })
       .catch(error => alert("Erro ao atualizar usuário."))
     } else {
       if (!novaSenha) { alert("Senha é obrigatória para criar um usuário novo!"); return; }
-      axios.post('http://127.0.0.1:8000/api/usuarios/', payload, { headers: { Authorization: `Bearer ${token}` } })
+      axios.post('https://api-ti-relatorios.onrender.com/api/usuarios/', payload, { headers: { Authorization: `Bearer ${token}` } })
       .then(response => { alert("Atendente criado com sucesso!"); limparFormularioUsuario(); buscarUsuarios(); })
       .catch(error => alert("Erro! Verifique se esse nome já não existe no sistema."))
     }
@@ -117,7 +115,7 @@ function App() {
   const apagarUsuario = (id) => {
     if (id === parseInt(atendenteId)) { alert("Você não pode apagar a si mesmo!"); return; }
     if (window.confirm("⚠️ ATENÇÃO: Deseja APAGAR a conta e todos os relatórios vinculados a ela?")) {
-      axios.delete(`http://127.0.0.1:8000/api/usuarios/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
+      axios.delete(`https://api-ti-relatorios.onrender.com/api/usuarios/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
       .then(() => buscarUsuarios())
       .catch(error => alert("Erro ao apagar usuário."))
     }
@@ -130,10 +128,10 @@ function App() {
     const dadosRelatorio = { empresa, funcionario, categoria, status, solit_prob: solitProb, resolucao, obs, atendente: atendenteId }
     
     if (editandoId) {
-      axios.put(`http://127.0.0.1:8000/api/relatorios/${editandoId}/`, dadosRelatorio, { headers: { Authorization: `Bearer ${token}` } })
+      axios.put(`https://api-ti-relatorios.onrender.com/api/relatorios/${editandoId}/`, dadosRelatorio, { headers: { Authorization: `Bearer ${token}` } })
       .then(response => { setRelatorios(relatorios.map(r => r.id === editandoId ? response.data : r)); limparFormulario(); alert("Atualizado!"); setAbaAtiva('historico'); })
     } else {
-      axios.post('http://127.0.0.1:8000/api/relatorios/', dadosRelatorio, { headers: { Authorization: `Bearer ${token}` } })
+      axios.post('https://api-ti-relatorios.onrender.com/api/relatorios/', dadosRelatorio, { headers: { Authorization: `Bearer ${token}` } })
       .then(response => { setRelatorios([response.data, ...relatorios]); limparFormulario(); alert("Salvo!"); })
     }
   }
@@ -146,7 +144,7 @@ function App() {
 
   const apagarRelatorio = (id) => {
     if (window.confirm("Apagar este relatório?")) {
-      axios.delete(`http://127.0.0.1:8000/api/relatorios/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
+      axios.delete(`https://api-ti-relatorios.onrender.com/api/relatorios/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
       .then(() => setRelatorios(relatorios.filter(r => r.id !== id)))
     }
   }
@@ -227,7 +225,7 @@ function App() {
             <img src={logoImg} alt="Logo Globalnet" style={{ maxWidth: '180px', maxHeight: '80px' }} />
           </div>
 
-          <h2 style={{ textAlign: 'center', color: tema.texto1, marginBottom: '30px', marginTop: 0 }}>🔐 Login no Sistema</h2>
+          <h2 style={{ textAlign: 'center', color: tema.texto1, marginBottom: '30px', marginTop: 0 }}>Login</h2>
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <input type="text" placeholder="Usuário" required value={username} onChange={(e) => setUsername(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, boxSizing: 'border-box' }} />
             <input type="password" placeholder="Senha" required value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, boxSizing: 'border-box' }} />
