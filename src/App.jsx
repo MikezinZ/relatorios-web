@@ -274,13 +274,13 @@ function App() {
             
             <div style={{ display: 'flex', alignItems: 'center', marginRight: '10px' }}>
               <img src={logoImg} alt="Logo Globalnet" style={{ height: '40px', marginRight: '15px' }} />
-              <h2 style={{ margin: 0, color: tema.texto1, display: 'none' }}>Equipe T.I.</h2> 
+              <h2 style={{ margin: 0, color: tema.texto1, display: 'none' }}>Suporte de T.i.</h2> 
             </div>
 
-            <button onClick={() => { setAbaAtiva('novo'); limparFormulario(); }} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'novo' ? '#32b8f7' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'novo' ? '#fff' : tema.texto1 }}>📝 Atendimento</button>
-            <button onClick={() => setAbaAtiva('historico')} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'historico' ? '#32b8f7' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'historico' ? '#fff' : tema.texto1 }}>🗂️ Histórico</button>
+            <button onClick={() => { setAbaAtiva('novo'); limparFormulario(); }} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'novo' ? '#32b8f7' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'novo' ? '#fff' : tema.texto1 }}>Atendimento</button>
+            <button onClick={() => setAbaAtiva('historico')} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'historico' ? '#32b8f7' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'historico' ? '#fff' : tema.texto1 }}>Histórico</button>
             {isStaff && (
-              <button onClick={() => { setAbaAtiva('gestao'); limparFormularioUsuario(); }} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'gestao' ? '#10b981' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'gestao' ? '#fff' : tema.texto1 }}>⚙️ Chefia</button>
+              <button onClick={() => { setAbaAtiva('gestao'); limparFormularioUsuario(); }} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'gestao' ? '#10b981' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'gestao' ? '#fff' : tema.texto1 }}>Administração</button>
             )}
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -340,7 +340,7 @@ function App() {
 
         {abaAtiva === 'historico' && (
           <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '10px', border: `1px solid ${tema.borda}` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}><h2 style={{ color: tema.texto1, margin: 0 }}>🗂️ Histórico</h2></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}><h2 style={{ color: tema.texto1, margin: 0 }}>Histórico</h2></div>
             
             <div style={{ backgroundColor: tema.fundoDestaque, padding: '15px', borderRadius: '8px', border: `1px solid ${tema.borda}`, marginBottom: '25px' }}>
               <h4 style={{ margin: '0 0 10px 0', color: tema.texto1 }}>📄 Exportar Relatórios</h4>
