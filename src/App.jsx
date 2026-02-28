@@ -23,6 +23,13 @@ function App() {
   const [categoria, setCategoria] = useState('Outros')
   const [status, setStatus] = useState('Resolvido')
   
+  // === DATA PADRÃO (HOJE NO FORMATO YYYY-MM-DD) ===
+  const dataLocal = new Date();
+  const hojePadrao = `${dataLocal.getFullYear()}-${String(dataLocal.getMonth() + 1).padStart(2, '0')}-${String(dataLocal.getDate()).padStart(2, '0')}`;
+  
+  // === NOVO CAMPO DE DATA ===
+  const [dataAtendimento, setDataAtendimento] = useState(hojePadrao)
+
   const [solitProb, setSolitProb] = useState('')
   const [resolucao, setResolucao] = useState('')
   const [obs, setObs] = useState('')
@@ -125,7 +132,8 @@ function App() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    const dadosRelatorio = { empresa, funcionario, categoria, status, solit_prob: solitProb, resolucao, obs, atendente: atendenteId }
+    // === ENVIANDO A DATA DE ATENDIMENTO PRO DJANGO ===
+    const dadosRelatorio = { empresa, funcionario, categoria, status, data_atendimento: dataAtendimento, solit_prob: solitProb, resolucao, obs, atendente: atendenteId }
     
     if (editandoId) {
       axios.put(`https://api-ti-relatorios.onrender.com/api/relatorios/${editandoId}/`, dadosRelatorio, { headers: { Authorization: `Bearer ${token}` } })
@@ -139,6 +147,11 @@ function App() {
   const iniciarEdicao = (relatorio) => {
     setEditandoId(relatorio.id); setEmpresa(relatorio.empresa); setFuncionario(relatorio.funcionario || '');
     setCategoria(relatorio.categoria || 'Outros'); setStatus(relatorio.status || 'Resolvido');
+    
+    // Puxa a data do atendimento salvo (ou a data de criação se for antigo e não tiver)
+    const dataParaEditar = relatorio.data_atendimento || relatorio.criado_em.split('T')[0];
+    setDataAtendimento(dataParaEditar);
+
     setSolitProb(relatorio.solit_prob); setResolucao(relatorio.resolucao); setObs(relatorio.obs || ''); setAbaAtiva('novo');
   }
 
@@ -149,13 +162,20 @@ function App() {
     }
   }
 
-  const limparFormulario = () => { setEditandoId(null); setEmpresa(''); setFuncionario(''); setCategoria('Outros'); setStatus('Resolvido'); setSolitProb(''); setResolucao(''); setObs(''); }
+  const limparFormulario = () => { setEditandoId(null); setEmpresa(''); setFuncionario(''); setCategoria('Outros'); setStatus('Resolvido'); setDataAtendimento(hojePadrao); setSolitProb(''); setResolucao(''); setObs(''); }
 
-  // === FUNÇÕES DE EXPORTAÇÃO (PDF E TXT COM OS MESMOS FILTROS) ===
+  // === FUNÇÃO PARA FORMATAR A DATA (DD/MM/YYYY) ===
+  const formatarData = (dataString) => {
+    if (!dataString) return '';
+    const [ano, mes, dia] = dataString.split('-');
+    return `${dia}/${mes}/${ano}`;
+  }
+
   const filtrarDadosParaExportacao = () => {
     let dados = relatorios
-    if (pdfDataInicio) dados = dados.filter(r => new Date(r.criado_em) >= new Date(pdfDataInicio + 'T00:00:00'))
-    if (pdfDataFim) dados = dados.filter(r => new Date(r.criado_em) <= new Date(pdfDataFim + 'T23:59:59'))
+    // Filtros agora olham para a data real do atendimento
+    if (pdfDataInicio) dados = dados.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) >= pdfDataInicio)
+    if (pdfDataFim) dados = dados.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) <= pdfDataFim)
     if (pdfAtendente) dados = dados.filter(r => r.atendente_nome?.toLowerCase().includes(pdfAtendente.toLowerCase()))
     return dados
   }
@@ -168,8 +188,8 @@ function App() {
     doc.setFontSize(18); doc.text("Relatório Geral de Atendimentos - T.I.", 14, 22)
     doc.setFontSize(10); doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 30)
 
-    const colunas = ["Data", "Empresa", "Func.", "Categ.", "Status", "Problema", "Atendente"]
-    const linhas = dados.map(r => [ new Date(r.criado_em).toLocaleDateString('pt-BR'), r.empresa, r.funcionario || '-', r.categoria || '-', r.status || '-', r.solit_prob, r.atendente_nome || `ID ${r.atendente}` ])
+    const colunas = ["Data do B.O", "Empresa", "Func.", "Categ.", "Status", "Problema", "Atendente"]
+    const linhas = dados.map(r => [ formatarData(r.data_atendimento || r.criado_em.split('T')[0]), r.empresa, r.funcionario || '-', r.categoria || '-', r.status || '-', r.solit_prob, r.atendente_nome || `ID ${r.atendente}` ])
     autoTable(doc, { head: [colunas], body: linhas, startY: 35, styles: { fontSize: 8, cellPadding: 2 }, headStyles: { fillColor: [50, 184, 247] }, columnStyles: { 5: { cellWidth: 80 } } })
     doc.save(`relatorio_ti_${new Date().getTime()}.pdf`)
   }
@@ -181,8 +201,8 @@ function App() {
     let texto = `=== RELATÓRIOS DE ATENDIMENTO ===\n`;
     if (pdfDataInicio || pdfDataFim || pdfAtendente) {
       texto += `Filtros aplicados: `;
-      if (pdfDataInicio) texto += `De ${new Date(pdfDataInicio).toLocaleDateString('pt-BR')} `;
-      if (pdfDataFim) texto += `Ate ${new Date(pdfDataFim).toLocaleDateString('pt-BR')} `;
+      if (pdfDataInicio) texto += `De ${formatarData(pdfDataInicio)} `;
+      if (pdfDataFim) texto += `Ate ${formatarData(pdfDataFim)} `;
       if (pdfAtendente) texto += `| Atendente: ${pdfAtendente} `;
       texto += `\n`;
     }
@@ -191,7 +211,7 @@ function App() {
     const relatoriosEmOrdem = [...dados].reverse();
 
     relatoriosEmOrdem.forEach((r, i) => {
-      texto += `ATENDIMENTO #${i + 1} - ${new Date(r.criado_em).toLocaleString('pt-BR')}\n`;
+      texto += `ATENDIMENTO #${i + 1} - Data do B.O: ${formatarData(r.data_atendimento || r.criado_em.split('T')[0])}\n`;
       texto += `Empresa:     ${r.empresa}\n`;
       texto += `Funcionário: ${r.funcionario || 'N/A'}\n`;
       texto += `Categoria:   ${r.categoria || 'N/A'}\n`;
@@ -212,9 +232,10 @@ function App() {
   const funcionariosDaEmpresa = [...new Set(relatorios.filter(r => r.empresa === empresa).map(r => r.funcionario).filter(Boolean))];
 
   const relatoriosFiltrados = relatorios.filter((r) => { const t = busca.toLowerCase(); return (r.empresa?.toLowerCase().includes(t) || r.funcionario?.toLowerCase().includes(t) || r.solit_prob?.toLowerCase().includes(t) || r.resolucao?.toLowerCase().includes(t) || r.categoria?.toLowerCase().includes(t)) })
-  const dataDeHoje = new Date().toLocaleDateString('pt-BR')
-  const relatoriosHoje = relatoriosFiltrados.filter(r => new Date(r.criado_em).toLocaleDateString('pt-BR') === dataDeHoje)
-  const relatoriosAntigos = relatoriosFiltrados.filter(r => new Date(r.criado_em).toLocaleDateString('pt-BR') !== dataDeHoje)
+  
+  // === SEPARANDO O QUE É DE "HOJE" BASEADO NA DATA DO ATENDIMENTO ===
+  const relatoriosHoje = relatoriosFiltrados.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) === hojePadrao)
+  const relatoriosAntigos = relatoriosFiltrados.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) !== hojePadrao)
 
   if (!token) {
     return (
@@ -254,13 +275,16 @@ function App() {
         <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
           <span style={{ fontSize: '12px', backgroundColor: isDarkMode ? '#334155' : '#f1f5f9', color: tema.texto2, padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>📂 {relatorio.categoria || 'Outros'}</span>
           <span style={{ fontSize: '12px', backgroundColor: corStatusBg, color: corStatusTxt, padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>{relatorio.status === 'Resolvido' ? '🟢' : relatorio.status === 'Andamento' ? '🟡' : '🔴'} {relatorio.status || 'Resolvido'}</span>
+          
+          {/* Mostrando a data do BO bonitinha na etiqueta */}
+          <span style={{ fontSize: '12px', backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', color: tema.texto1, padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>📅 {formatarData(relatorio.data_atendimento || relatorio.criado_em.split('T')[0])}</span>
         </div>
 
         <p style={{ margin: '5px 0', fontSize: '14px', color: tema.texto1 }}><strong>PROB:</strong> {relatorio.solit_prob}</p>
         <p style={{ margin: '5px 0', fontSize: '14px', color: tema.texto1 }}><strong>RES:</strong> {relatorio.resolucao}</p>
         {relatorio.obs && <p style={{ margin: '5px 0', fontSize: '14px', color: tema.texto1 }}><strong>OBS:</strong> {relatorio.obs}</p>}
         
-        <div style={{ marginTop: '15px', paddingTop: '10px', borderTop: `1px solid ${tema.borda}`, fontSize: '0.8em', color: tema.texto2 }}>Atendente: {relatorio.atendente_nome} | Data: {new Date(relatorio.criado_em).toLocaleString('pt-BR')}</div>
+        <div style={{ marginTop: '15px', paddingTop: '10px', borderTop: `1px solid ${tema.borda}`, fontSize: '0.8em', color: tema.texto2 }}>Atendente: {relatorio.atendente_nome} | Lançado no sistema em: {new Date(relatorio.criado_em).toLocaleString('pt-BR')}</div>
       </div>
     )
   }
@@ -324,6 +348,11 @@ function App() {
                     <option value="Aberto">🔴 Aberto (Pendente)</option>
                   </select>
                 </div>
+                
+                {/* === AQUI ENTROU O CAMPO DE DATA RETROATIVA === */}
+                <div style={{ flex: 1, minWidth: '150px' }}>
+                  <input type="date" required value={dataAtendimento} onChange={(e) => setDataAtendimento(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1 }} title="Data em que o serviço foi realizado" />
+                </div>
              </div>
 
              <textarea placeholder="SOLIT/PROB" required value={solitProb} onChange={(e) => setSolitProb(e.target.value)} style={{ padding: '12px', borderRadius: '6px', border: 'none', minHeight: '80px', fontSize: '15px', resize: 'vertical', backgroundColor: tema.inputBg, color: tema.texto1 }} />
@@ -349,7 +378,6 @@ function App() {
                 <div><label style={{ fontSize: '12px', color: tema.texto2, display: 'block' }}>Data Final</label><input type="date" value={pdfDataFim} onChange={e => setPdfDataFim(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1 }} /></div>
                 <div><label style={{ fontSize: '12px', color: tema.texto2, display: 'block' }}>Atendente</label><input type="text" placeholder="Nome..." value={pdfAtendente} onChange={e => setPdfAtendente(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1 }} /></div>
                 
-                {/* === OS DOIS BOTÕES ESTÃO AQUI AGORA === */}
                 <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
                   <button onClick={gerarPDF} style={{ padding: '9px 15px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>📥 Baixar PDF</button>
                   <button onClick={gerarTXT} style={{ padding: '9px 15px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>📝 Baixar TXT</button>
@@ -361,7 +389,7 @@ function App() {
             <input type="text" placeholder="🔍 Buscar por empresa, funcionário, problema, categoria..." value={busca} onChange={(e) => setBusca(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, fontSize: '16px', boxSizing: 'border-box', marginBottom: '30px' }} />
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #32b8f7', paddingBottom: '5px', marginBottom: '15px' }}>
-              <h3 style={{ color: tema.texto1, margin: 0 }}>📅 Hoje ({dataDeHoje})</h3>
+              <h3 style={{ color: tema.texto1, margin: 0 }}>📅 Hoje ({formatarData(hojePadrao)})</h3>
             </div>
 
             {relatoriosHoje.length === 0 ? <p style={{ color: tema.texto2, fontStyle: 'italic', marginBottom: '40px' }}>Nenhum atendimento registrado hoje.</p> : <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '40px' }}>{relatoriosHoje.map(relatorio => <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />)}</div>}
