@@ -23,17 +23,17 @@ function App() {
   const [categoria, setCategoria] = useState('Outros')
   const [status, setStatus] = useState('Resolvido')
   
-  // === DATA PADRÃO (HOJE NO FORMATO YYYY-MM-DD) ===
   const dataLocal = new Date();
   const hojePadrao = `${dataLocal.getFullYear()}-${String(dataLocal.getMonth() + 1).padStart(2, '0')}-${String(dataLocal.getDate()).padStart(2, '0')}`;
   
-  // === NOVO CAMPO DE DATA ===
   const [dataAtendimento, setDataAtendimento] = useState(hojePadrao)
 
   const [solitProb, setSolitProb] = useState('')
   const [resolucao, setResolucao] = useState('')
   const [obs, setObs] = useState('')
   const [busca, setBusca] = useState('')
+  
+  const [filtroDataTela, setFiltroDataTela] = useState('')
   const [editandoId, setEditandoId] = useState(null)
 
   const [pdfDataInicio, setPdfDataInicio] = useState('')
@@ -132,7 +132,6 @@ function App() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    // === ENVIANDO A DATA DE ATENDIMENTO PRO DJANGO ===
     const dadosRelatorio = { empresa, funcionario, categoria, status, data_atendimento: dataAtendimento, solit_prob: solitProb, resolucao, obs, atendente: atendenteId }
     
     if (editandoId) {
@@ -148,7 +147,6 @@ function App() {
     setEditandoId(relatorio.id); setEmpresa(relatorio.empresa); setFuncionario(relatorio.funcionario || '');
     setCategoria(relatorio.categoria || 'Outros'); setStatus(relatorio.status || 'Resolvido');
     
-    // Puxa a data do atendimento salvo (ou a data de criação se for antigo e não tiver)
     const dataParaEditar = relatorio.data_atendimento || relatorio.criado_em.split('T')[0];
     setDataAtendimento(dataParaEditar);
 
@@ -164,16 +162,40 @@ function App() {
 
   const limparFormulario = () => { setEditandoId(null); setEmpresa(''); setFuncionario(''); setCategoria('Outros'); setStatus('Resolvido'); setDataAtendimento(hojePadrao); setSolitProb(''); setResolucao(''); setObs(''); }
 
-  // === FUNÇÃO PARA FORMATAR A DATA (DD/MM/YYYY) ===
   const formatarData = (dataString) => {
     if (!dataString) return '';
     const [ano, mes, dia] = dataString.split('-');
     return `${dia}/${mes}/${ano}`;
   }
 
+  // === NOVO: FUNÇÃO PARA GERAR O NOME DO ARQUIVO DINAMICAMENTE ===
+  const gerarNomeArquivo = () => {
+    let nome = "Atendimento";
+    
+    // 1. Adiciona o nome do atendente ou "Geral"
+    if (pdfAtendente) {
+      nome += ` ${pdfAtendente.trim()}`;
+    } else {
+      nome += ` Geral`;
+    }
+
+    // 2. Adiciona as datas (trocando barra por hífen para o Windows não reclamar)
+    let dataStr = "";
+    if (pdfDataInicio && pdfDataFim && pdfDataInicio !== pdfDataFim) {
+      dataStr = `${formatarData(pdfDataInicio).replace(/\//g, '-')} a ${formatarData(pdfDataFim).replace(/\//g, '-')}`;
+    } else if (pdfDataInicio) {
+      dataStr = formatarData(pdfDataInicio).replace(/\//g, '-');
+    } else if (pdfDataFim) {
+      dataStr = formatarData(pdfDataFim).replace(/\//g, '-');
+    } else {
+      dataStr = formatarData(hojePadrao).replace(/\//g, '-'); // Data atual se não tiver filtro
+    }
+
+    return `${nome} - ${dataStr}`;
+  }
+
   const filtrarDadosParaExportacao = () => {
     let dados = relatorios
-    // Filtros agora olham para a data real do atendimento
     if (pdfDataInicio) dados = dados.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) >= pdfDataInicio)
     if (pdfDataFim) dados = dados.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) <= pdfDataFim)
     if (pdfAtendente) dados = dados.filter(r => r.atendente_nome?.toLowerCase().includes(pdfAtendente.toLowerCase()))
@@ -191,7 +213,9 @@ function App() {
     const colunas = ["Data do B.O", "Empresa", "Func.", "Categ.", "Status", "Problema", "Atendente"]
     const linhas = dados.map(r => [ formatarData(r.data_atendimento || r.criado_em.split('T')[0]), r.empresa, r.funcionario || '-', r.categoria || '-', r.status || '-', r.solit_prob, r.atendente_nome || `ID ${r.atendente}` ])
     autoTable(doc, { head: [colunas], body: linhas, startY: 35, styles: { fontSize: 8, cellPadding: 2 }, headStyles: { fillColor: [50, 184, 247] }, columnStyles: { 5: { cellWidth: 80 } } })
-    doc.save(`relatorio_ti_${new Date().getTime()}.pdf`)
+    
+    // Aplicando a função do nome dinâmico no PDF
+    doc.save(`${gerarNomeArquivo()}.pdf`)
   }
 
   const gerarTXT = () => {
@@ -224,22 +248,32 @@ function App() {
     });
 
     const blob = new Blob([texto], { type: 'text/plain;charset=utf-8' });
-    const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `relatorio_ti_${new Date().getTime()}.txt`;
+    const link = document.createElement('a'); link.href = URL.createObjectURL(blob); 
+    
+    // Aplicando a função do nome dinâmico no TXT
+    link.download = `${gerarNomeArquivo()}.txt`;
+    
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
   }
 
   const empresasUnicas = [...new Set(relatorios.map(r => r.empresa).filter(Boolean))];
   const funcionariosDaEmpresa = [...new Set(relatorios.filter(r => r.empresa === empresa).map(r => r.funcionario).filter(Boolean))];
 
-  const relatoriosFiltrados = relatorios.filter((r) => { const t = busca.toLowerCase(); return (r.empresa?.toLowerCase().includes(t) || r.funcionario?.toLowerCase().includes(t) || r.solit_prob?.toLowerCase().includes(t) || r.resolucao?.toLowerCase().includes(t) || r.categoria?.toLowerCase().includes(t)) })
+  let relatoriosParaMostrar = relatorios.filter((r) => { const t = busca.toLowerCase(); return (r.empresa?.toLowerCase().includes(t) || r.funcionario?.toLowerCase().includes(t) || r.solit_prob?.toLowerCase().includes(t) || r.resolucao?.toLowerCase().includes(t) || r.categoria?.toLowerCase().includes(t)) })
   
-  // === SEPARANDO O QUE É DE "HOJE" BASEADO NA DATA DO ATENDIMENTO ===
-  const relatoriosHoje = relatoriosFiltrados.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) === hojePadrao)
-  const relatoriosAntigos = relatoriosFiltrados.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) !== hojePadrao)
+  if (filtroDataTela) {
+    relatoriosParaMostrar = relatoriosParaMostrar.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) === filtroDataTela);
+  }
+
+  const isBuscandoDataExata = filtroDataTela !== '';
+  const relatoriosHoje = !isBuscandoDataExata ? relatoriosParaMostrar.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) === hojePadrao) : [];
+  const relatoriosAntigos = !isBuscandoDataExata ? relatoriosParaMostrar.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) !== hojePadrao) : [];
 
   if (!token) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: tema.fundoMain, display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'Arial, sans-serif', transition: '0.3s' }}>
+        <style>{`body { margin: 0; padding: 0; box-sizing: border-box; background-color: ${tema.fundoMain}; }`}</style>
+        
         <div style={{ backgroundColor: tema.fundoCard, padding: '40px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px' }}>
           
           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
@@ -272,11 +306,9 @@ function App() {
         
         <h3 style={{ margin: '0 0 10px 0', color: '#32b8f7', fontSize: '18px', paddingRight: '70px' }}>{relatorio.empresa} {relatorio.funcionario && <span style={{ color: tema.texto2, fontSize: '14px' }}>- {relatorio.funcionario}</span>}</h3>
         
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '12px', backgroundColor: isDarkMode ? '#334155' : '#f1f5f9', color: tema.texto2, padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>📂 {relatorio.categoria || 'Outros'}</span>
           <span style={{ fontSize: '12px', backgroundColor: corStatusBg, color: corStatusTxt, padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>{relatorio.status === 'Resolvido' ? '🟢' : relatorio.status === 'Andamento' ? '🟡' : '🔴'} {relatorio.status || 'Resolvido'}</span>
-          
-          {/* Mostrando a data do BO bonitinha na etiqueta */}
           <span style={{ fontSize: '12px', backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', color: tema.texto1, padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>📅 {formatarData(relatorio.data_atendimento || relatorio.criado_em.split('T')[0])}</span>
         </div>
 
@@ -291,6 +323,9 @@ function App() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: tema.fundoMain, padding: '20px', fontFamily: 'Arial, sans-serif', transition: '0.3s' }}>
+      
+      <style>{`body { margin: 0; padding: 0; box-sizing: border-box; background-color: ${tema.fundoMain}; }`}</style>
+
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', backgroundColor: tema.fundoCard, padding: '15px 20px', borderRadius: '10px', border: `1px solid ${tema.borda}` }}>
@@ -349,7 +384,6 @@ function App() {
                   </select>
                 </div>
                 
-                {/* === AQUI ENTROU O CAMPO DE DATA RETROATIVA === */}
                 <div style={{ flex: 1, minWidth: '150px' }}>
                   <input type="date" required value={dataAtendimento} onChange={(e) => setDataAtendimento(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1 }} title="Data em que o serviço foi realizado" />
                 </div>
@@ -382,20 +416,38 @@ function App() {
                   <button onClick={gerarPDF} style={{ padding: '9px 15px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>📥 Baixar PDF</button>
                   <button onClick={gerarTXT} style={{ padding: '9px 15px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>📝 Baixar TXT</button>
                 </div>
-
               </div>
             </div>
             
-            <input type="text" placeholder="🔍 Buscar por empresa, funcionário, problema, categoria..." value={busca} onChange={(e) => setBusca(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, fontSize: '16px', boxSizing: 'border-box', marginBottom: '30px' }} />
-            
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #32b8f7', paddingBottom: '5px', marginBottom: '15px' }}>
-              <h3 style={{ color: tema.texto1, margin: 0 }}>📅 Hoje ({formatarData(hojePadrao)})</h3>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '30px', flexWrap: 'wrap' }}>
+              <input type="text" placeholder="🔍 Buscar por empresa, funcionário, problema, categoria..." value={busca} onChange={(e) => setBusca(e.target.value)} style={{ flex: 1, minWidth: '200px', padding: '12px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, fontSize: '16px', boxSizing: 'border-box' }} />
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: tema.inputBg, padding: '0 15px', borderRadius: '6px', border: `1px solid ${tema.borda}` }}>
+                 <span style={{color: tema.texto2, fontSize: '14px', fontWeight: 'bold'}}>📅 Ver dia exato:</span>
+                 <input type="date" value={filtroDataTela} onChange={(e) => setFiltroDataTela(e.target.value)} style={{ padding: '8px', border: 'none', backgroundColor: 'transparent', color: tema.texto1, outline: 'none', fontSize: '15px' }} />
+                 {filtroDataTela && <button onClick={() => setFiltroDataTela('')} style={{ background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>Limpar</button>}
+              </div>
             </div>
-
-            {relatoriosHoje.length === 0 ? <p style={{ color: tema.texto2, fontStyle: 'italic', marginBottom: '40px' }}>Nenhum atendimento registrado hoje.</p> : <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '40px' }}>{relatoriosHoje.map(relatorio => <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />)}</div>}
             
-            <h3 style={{ borderBottom: `2px solid ${tema.borda}`, paddingBottom: '5px', color: tema.texto1, marginBottom: '15px' }}>🕰️ Últimos Atendimentos</h3>
-            {relatoriosAntigos.length === 0 ? <p style={{ color: tema.texto2, fontStyle: 'italic' }}>Nenhum histórico antigo encontrado.</p> : <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>{relatoriosAntigos.map(relatorio => <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />)}</div>}
+            {isBuscandoDataExata ? (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #32b8f7', paddingBottom: '5px', marginBottom: '15px' }}>
+                  <h3 style={{ color: tema.texto1, margin: 0 }}>📅 Resultados para {formatarData(filtroDataTela)}</h3>
+                </div>
+                {relatoriosParaMostrar.length === 0 ? <p style={{ color: tema.texto2, fontStyle: 'italic', marginBottom: '40px' }}>Nenhum atendimento registrado nesta data.</p> : <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '40px' }}>{relatoriosParaMostrar.map(relatorio => <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />)}</div>}
+              </>
+            ) : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #32b8f7', paddingBottom: '5px', marginBottom: '15px' }}>
+                  <h3 style={{ color: tema.texto1, margin: 0 }}>📅 Hoje ({formatarData(hojePadrao)})</h3>
+                </div>
+
+                {relatoriosHoje.length === 0 ? <p style={{ color: tema.texto2, fontStyle: 'italic', marginBottom: '40px' }}>Nenhum atendimento registrado hoje.</p> : <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '40px' }}>{relatoriosHoje.map(relatorio => <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />)}</div>}
+                
+                <h3 style={{ borderBottom: `2px solid ${tema.borda}`, paddingBottom: '5px', color: tema.texto1, marginBottom: '15px' }}>🕰️ Últimos Atendimentos</h3>
+                {relatoriosAntigos.length === 0 ? <p style={{ color: tema.texto2, fontStyle: 'italic' }}>Nenhum histórico antigo encontrado.</p> : <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>{relatoriosAntigos.map(relatorio => <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />)}</div>}
+              </>
+            )}
           </div>
         )}
 
