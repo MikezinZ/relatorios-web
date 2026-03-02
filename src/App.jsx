@@ -296,8 +296,8 @@ function App() {
               style={{ 
                 maxWidth: '180px', 
                 maxHeight: '80px',
-                // A sombra branca que faz a logo aparecer no fundo escuro
-                filter: isDarkMode ? 'drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.4))' : 'none',
+                // A MÁGICA: Zera as cores originais e inverte para BRANCO no modo escuro
+                filter: isDarkMode ? 'brightness(0) invert(1)' : 'none',
                 transition: 'filter 0.3s'
               }} 
             />
@@ -359,8 +359,8 @@ function App() {
                 style={{ 
                   height: '40px', 
                   marginRight: '15px',
-                  // A sombra na logo do menu
-                  filter: isDarkMode ? 'drop-shadow(0px 0px 5px rgba(255, 255, 255, 0.4))' : 'none',
+                  // A MÁGICA TAMBÉM AQUI NO CABEÇALHO
+                  filter: isDarkMode ? 'brightness(0) invert(1)' : 'none',
                   transition: 'filter 0.3s'
                 }} 
               />
