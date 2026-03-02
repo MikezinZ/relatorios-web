@@ -4,6 +4,7 @@ import { jwtDecode } from 'jwt-decode'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import logoImg from './assets/logo_Globalnet.png'
+import logoImgDark from './assets/capturar-removebg-preview.png'
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '')
@@ -63,6 +64,9 @@ function App() {
     inputBg: isDarkMode ? '#0f172a' : '#ffffff',
     fundoDestaque: isDarkMode ? '#334155' : '#f8fafc'
   }
+
+  // === AQUI ESTÁ A LÓGICA DE TROCA DE LOGO ===
+  const logoParaUsar = isDarkMode ? logoImgDark : logoImg;
 
   const handleLogin = (e) => {
     e.preventDefault()
@@ -154,7 +158,6 @@ function App() {
       return;
     }
 
-    // === AGORA ENVIAMOS O ARRAY 'atendentes' LÁ PRO DJANGO ===
     const dadosRelatorio = { empresa, funcionario, categoria, status, data_atendimento: dataAtendimento, solit_prob: solitProb, resolucao, obs, atendentes: atendentesSelecionados }
     
     if (editandoId) {
@@ -173,7 +176,6 @@ function App() {
     const dataParaEditar = relatorio.data_atendimento || relatorio.criado_em.split('T')[0];
     setDataAtendimento(dataParaEditar);
 
-    // Carrega os atendentes que já estavam salvos (o Django devolve o array de IDs em relatorio.atendentes)
     setAtendentesSelecionados(relatorio.atendentes || []);
 
     setSolitProb(relatorio.solit_prob); setResolucao(relatorio.resolucao); setObs(relatorio.obs || ''); setAbaAtiva('novo');
@@ -189,7 +191,7 @@ function App() {
   const limparFormulario = () => { 
     setEditandoId(null); setEmpresa(''); setFuncionario(''); setCategoria('Outros'); setStatus('Resolvido'); 
     setDataAtendimento(hojePadrao); setSolitProb(''); setResolucao(''); setObs(''); 
-    setAtendentesSelecionados(atendenteId ? [parseInt(atendenteId)] : []); // Volta a selecionar apenas você
+    setAtendentesSelecionados(atendenteId ? [parseInt(atendenteId)] : []);
   }
 
   const formatarData = (dataString) => {
@@ -292,7 +294,12 @@ function App() {
       <div style={{ minHeight: '100vh', backgroundColor: tema.fundoMain, display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'Arial, sans-serif', transition: '0.3s' }}>
         <style>{`body { margin: 0; padding: 0; box-sizing: border-box; background-color: ${tema.fundoMain}; }`}</style>
         <div style={{ backgroundColor: tema.fundoCard, padding: '40px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px' }}>
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}><img src={logoImg} alt="Logo Globalnet" style={{ maxWidth: '180px', maxHeight: '80px' }} /></div>
+          
+          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+            {/* LOGO DINÂMICA NA TELA DE LOGIN */}
+            <img src={logoParaUsar} alt="Logo Globalnet" style={{ maxWidth: '180px', maxHeight: '80px' }} />
+          </div>
+
           <h2 style={{ textAlign: 'center', color: tema.texto1, marginBottom: '30px', marginTop: 0 }}>Login</h2>
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <input type="text" placeholder="Usuário" required value={username} onChange={(e) => setUsername(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, boxSizing: 'border-box' }} />
@@ -341,10 +348,13 @@ function App() {
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', backgroundColor: tema.fundoCard, padding: '15px 20px', borderRadius: '10px', border: `1px solid ${tema.borda}` }}>
           <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
+            
             <div style={{ display: 'flex', alignItems: 'center', marginRight: '10px' }}>
-              <img src={logoImg} alt="Logo Globalnet" style={{ height: '40px', marginRight: '15px' }} />
+              {/* LOGO DINÂMICA NO CABEÇALHO */}
+              <img src={logoParaUsar} alt="Logo Globalnet" style={{ height: '40px', marginRight: '15px' }} />
               <h2 style={{ margin: 0, color: tema.texto1, display: 'none' }}>Suporte de T.i.</h2> 
             </div>
+            
             <button onClick={() => { setAbaAtiva('novo'); limparFormulario(); }} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'novo' ? '#32b8f7' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'novo' ? '#fff' : tema.texto1 }}>Atendimento</button>
             <button onClick={() => setAbaAtiva('historico')} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'historico' ? '#32b8f7' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'historico' ? '#fff' : tema.texto1 }}>Histórico</button>
             {isStaff && (
@@ -362,7 +372,6 @@ function App() {
            <h2 style={{ color: '#fff', marginTop: '0', marginBottom: '20px' }}>{editandoId ? '✏️ Editando Relatório' : 'Novo Atendimento'}</h2>
            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
              
-             {/* === CAIXAS DE SELEÇÃO DO ESQUADRÃO === */}
              <div style={{ backgroundColor: tema.inputBg, padding: '15px', borderRadius: '6px', border: `1px solid ${tema.borda}` }}>
                 <label style={{ display: 'block', color: tema.texto2, fontWeight: 'bold', marginBottom: '12px', fontSize: '14px' }}>
                   👥 Equipe no atendimento (Clique para marcar/desmarcar):
@@ -374,11 +383,11 @@ function App() {
                     return (
                       <button
                         key={user.id}
-                        type="button" // Muito importante para não enviar o form ao clicar
+                        type="button" 
                         onClick={() => handleToggleAtendente(user.id)}
                         style={{
                           padding: '8px 14px',
-                          borderRadius: '20px', // Deixa bem redondinho
+                          borderRadius: '20px',
                           border: isSelected ? 'none' : `1px solid ${tema.borda}`,
                           backgroundColor: isSelected ? '#32b8f7' : (isDarkMode ? '#1e293b' : '#f1f5f9'),
                           color: isSelected ? '#fff' : tema.texto1,
@@ -391,7 +400,7 @@ function App() {
                           gap: '5px'
                         }}
                       >
-                        {isSelected ? '?' : ''} {user.username}
+                        {isSelected ? '✓' : ''} {user.username}
                       </button>
                     )
                   })}
