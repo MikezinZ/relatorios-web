@@ -4,7 +4,6 @@ import { jwtDecode } from 'jwt-decode'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import logoImg from './assets/logo_Globalnet.png'
-import logoImgDark from './assets/logo_Escura.png' // Coreção do nome do caminho da imagem
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '')
@@ -29,7 +28,6 @@ function App() {
   
   const [dataAtendimento, setDataAtendimento] = useState(hojePadrao)
 
-  // === NOVO: ESTADO PARA MULTIPLOS ATENDENTES ===
   const [atendentesSelecionados, setAtendentesSelecionados] = useState([])
 
   const [solitProb, setSolitProb] = useState('')
@@ -65,9 +63,6 @@ function App() {
     fundoDestaque: isDarkMode ? '#334155' : '#f8fafc'
   }
 
-  // === AQUI ESTÁ A LÓGICA DE TROCA DE LOGO ===
-  const logoParaUsar = isDarkMode ? logoImgDark : logoImg;
-
   const handleLogin = (e) => {
     e.preventDefault()
     axios.post('https://api-ti-relatorios.onrender.com/api/token/', { username, password })
@@ -77,7 +72,6 @@ function App() {
       setToken(accessToken); setAtendenteId(decoded.user_id); setIsStaff(decoded.is_staff);
       localStorage.setItem('token', accessToken); localStorage.setItem('atendenteId', decoded.user_id); localStorage.setItem('isStaff', decoded.is_staff);
       setUsername(''); setPassword('');
-      // Ao logar, já marca a si mesmo no array de atendentes
       setAtendentesSelecionados([decoded.user_id]);
       if(decoded.is_staff) setAbaAtiva('gestao')
     })
@@ -296,8 +290,17 @@ function App() {
         <div style={{ backgroundColor: tema.fundoCard, padding: '40px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px' }}>
           
           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-            {/* LOGO DINÂMICA NA TELA DE LOGIN */}
-            <img src={logoParaUsar} alt="Logo Globalnet" style={{ maxWidth: '180px', maxHeight: '80px' }} />
+            <img 
+              src={logoImg} 
+              alt="Logo Globalnet" 
+              style={{ 
+                maxWidth: '180px', 
+                maxHeight: '80px',
+                // A sombra branca que faz a logo aparecer no fundo escuro
+                filter: isDarkMode ? 'drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.4))' : 'none',
+                transition: 'filter 0.3s'
+              }} 
+            />
           </div>
 
           <h2 style={{ textAlign: 'center', color: tema.texto1, marginBottom: '30px', marginTop: 0 }}>Login</h2>
@@ -350,8 +353,17 @@ function App() {
           <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
             
             <div style={{ display: 'flex', alignItems: 'center', marginRight: '10px' }}>
-              {/* LOGO DINÂMICA NO CABEÇALHO */}
-              <img src={logoParaUsar} alt="Logo Globalnet" style={{ height: '40px', marginRight: '15px' }} />
+              <img 
+                src={logoImg} 
+                alt="Logo Globalnet" 
+                style={{ 
+                  height: '40px', 
+                  marginRight: '15px',
+                  // A sombra na logo do menu
+                  filter: isDarkMode ? 'drop-shadow(0px 0px 5px rgba(255, 255, 255, 0.4))' : 'none',
+                  transition: 'filter 0.3s'
+                }} 
+              />
               <h2 style={{ margin: 0, color: tema.texto1, display: 'none' }}>Suporte de T.i.</h2> 
             </div>
             
