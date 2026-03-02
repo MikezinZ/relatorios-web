@@ -95,10 +95,8 @@ function App() {
       })
       .catch(error => console.error(error))
 
-      // Agora buscamos os usuários para todos, para podermos listar na caixinha de seleção
       buscarUsuarios()
       
-      // Se tiver token mas a tela foi recarregada, garante que a pessoa tá selecionada
       if (atendenteId && atendentesSelecionados.length === 0 && !editandoId) {
         setAtendentesSelecionados([parseInt(atendenteId)]);
       }
@@ -365,20 +363,38 @@ function App() {
            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
              
              {/* === CAIXAS DE SELEÇÃO DO ESQUADRÃO === */}
-             <div style={{ backgroundColor: tema.inputBg, padding: '15px', borderRadius: '6px', border: 'none' }}>
-                <label style={{ display: 'block', color: tema.texto2, fontWeight: 'bold', marginBottom: '10px', fontSize: '14px' }}>👥 Equipe que realizou o atendimento:</label>
-                <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-                  {usuarios.map(user => (
-                    <label key={user.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', color: tema.texto1, cursor: 'pointer', fontSize: '15px', backgroundColor: isDarkMode ? '#334155' : '#f1f5f9', padding: '8px 12px', borderRadius: '20px' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={atendentesSelecionados.includes(user.id)}
-                        onChange={() => handleToggleAtendente(user.id)}
-                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                      />
-                      {user.username}
-                    </label>
-                  ))}
+             <div style={{ backgroundColor: tema.inputBg, padding: '15px', borderRadius: '6px', border: `1px solid ${tema.borda}` }}>
+                <label style={{ display: 'block', color: tema.texto2, fontWeight: 'bold', marginBottom: '12px', fontSize: '14px' }}>
+                  👥 Equipe no atendimento (Clique para marcar/desmarcar):
+                </label>
+
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  {usuarios.map(user => {
+                    const isSelected = atendentesSelecionados.includes(user.id);
+                    return (
+                      <button
+                        key={user.id}
+                        type="button" // Muito importante para não enviar o form ao clicar
+                        onClick={() => handleToggleAtendente(user.id)}
+                        style={{
+                          padding: '8px 14px',
+                          borderRadius: '20px', // Deixa bem redondinho
+                          border: isSelected ? 'none' : `1px solid ${tema.borda}`,
+                          backgroundColor: isSelected ? '#32b8f7' : (isDarkMode ? '#1e293b' : '#f1f5f9'),
+                          color: isSelected ? '#fff' : tema.texto1,
+                          cursor: 'pointer',
+                          fontWeight: isSelected ? 'bold' : 'normal',
+                          transition: 'all 0.2s',
+                          fontSize: '14px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px'
+                        }}
+                      >
+                        {isSelected ? '?' : ''} {user.username}
+                      </button>
+                    )
+                  })}
                 </div>
              </div>
 
