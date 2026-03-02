@@ -28,6 +28,9 @@ function App() {
   
   const [dataAtendimento, setDataAtendimento] = useState(hojePadrao)
 
+  // === NOVO: ESTADO PARA MULTIPLOS ATENDENTES ===
+  const [atendentesSelecionados, setAtendentesSelecionados] = useState([])
+
   const [solitProb, setSolitProb] = useState('')
   const [resolucao, setResolucao] = useState('')
   const [obs, setObs] = useState('')
@@ -70,13 +73,15 @@ function App() {
       setToken(accessToken); setAtendenteId(decoded.user_id); setIsStaff(decoded.is_staff);
       localStorage.setItem('token', accessToken); localStorage.setItem('atendenteId', decoded.user_id); localStorage.setItem('isStaff', decoded.is_staff);
       setUsername(''); setPassword('');
+      // Ao logar, já marca a si mesmo no array de atendentes
+      setAtendentesSelecionados([decoded.user_id]);
       if(decoded.is_staff) setAbaAtiva('gestao')
     })
     .catch(error => alert("Usuário ou senha incorretos!"))
   }
 
   const handleLogout = () => {
-    setToken(''); setAtendenteId(null); setIsStaff(false);
+    setToken(''); setAtendenteId(null); setIsStaff(false); setAtendentesSelecionados([]);
     localStorage.removeItem('token'); localStorage.removeItem('atendenteId'); localStorage.removeItem('isStaff');
     setAbaAtiva('novo')
   }
@@ -90,9 +95,15 @@ function App() {
       })
       .catch(error => console.error(error))
 
-      if (isStaff) buscarUsuarios()
+      // Agora buscamos os usuários para todos, para podermos listar na caixinha de seleção
+      buscarUsuarios()
+      
+      // Se tiver token mas a tela foi recarregada, garante que a pessoa tá selecionada
+      if (atendenteId && atendentesSelecionados.length === 0 && !editandoId) {
+        setAtendentesSelecionados([parseInt(atendenteId)]);
+      }
     }
-  }, [token, isStaff])
+  }, [token, atendenteId])
 
   const buscarUsuarios = () => {
     axios.get('https://api-ti-relatorios.onrender.com/api/usuarios/', { headers: { Authorization: `Bearer ${token}` } })
@@ -130,9 +141,23 @@ function App() {
 
   const limparFormularioUsuario = () => { setEditandoUsuarioId(null); setNovoUsername(''); setNovaSenha(''); setNovoIsStaff(false); setNovoIsActive(true); }
 
+  const handleToggleAtendente = (id) => {
+    if (atendentesSelecionados.includes(id)) {
+      setAtendentesSelecionados(atendentesSelecionados.filter(aId => aId !== id));
+    } else {
+      setAtendentesSelecionados([...atendentesSelecionados, id]);
+    }
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault()
-    const dadosRelatorio = { empresa, funcionario, categoria, status, data_atendimento: dataAtendimento, solit_prob: solitProb, resolucao, obs, atendente: atendenteId }
+    if (atendentesSelecionados.length === 0) {
+      alert("Selecione pelo menos um atendente para este relatório!");
+      return;
+    }
+
+    // === AGORA ENVIAMOS O ARRAY 'atendentes' LÁ PRO DJANGO ===
+    const dadosRelatorio = { empresa, funcionario, categoria, status, data_atendimento: dataAtendimento, solit_prob: solitProb, resolucao, obs, atendentes: atendentesSelecionados }
     
     if (editandoId) {
       axios.put(`https://api-ti-relatorios.onrender.com/api/relatorios/${editandoId}/`, dadosRelatorio, { headers: { Authorization: `Bearer ${token}` } })
@@ -150,6 +175,9 @@ function App() {
     const dataParaEditar = relatorio.data_atendimento || relatorio.criado_em.split('T')[0];
     setDataAtendimento(dataParaEditar);
 
+    // Carrega os atendentes que já estavam salvos (o Django devolve o array de IDs em relatorio.atendentes)
+    setAtendentesSelecionados(relatorio.atendentes || []);
+
     setSolitProb(relatorio.solit_prob); setResolucao(relatorio.resolucao); setObs(relatorio.obs || ''); setAbaAtiva('novo');
   }
 
@@ -160,7 +188,11 @@ function App() {
     }
   }
 
-  const limparFormulario = () => { setEditandoId(null); setEmpresa(''); setFuncionario(''); setCategoria('Outros'); setStatus('Resolvido'); setDataAtendimento(hojePadrao); setSolitProb(''); setResolucao(''); setObs(''); }
+  const limparFormulario = () => { 
+    setEditandoId(null); setEmpresa(''); setFuncionario(''); setCategoria('Outros'); setStatus('Resolvido'); 
+    setDataAtendimento(hojePadrao); setSolitProb(''); setResolucao(''); setObs(''); 
+    setAtendentesSelecionados(atendenteId ? [parseInt(atendenteId)] : []); // Volta a selecionar apenas você
+  }
 
   const formatarData = (dataString) => {
     if (!dataString) return '';
@@ -168,18 +200,9 @@ function App() {
     return `${dia}/${mes}/${ano}`;
   }
 
-  // === NOVO: FUNÇÃO PARA GERAR O NOME DO ARQUIVO DINAMICAMENTE ===
   const gerarNomeArquivo = () => {
     let nome = "Atendimento";
-    
-    // 1. Adiciona o nome do atendente ou "Geral"
-    if (pdfAtendente) {
-      nome += ` ${pdfAtendente.trim()}`;
-    } else {
-      nome += ` Geral`;
-    }
-
-    // 2. Adiciona as datas (trocando barra por hífen para o Windows não reclamar)
+    if (pdfAtendente) { nome += ` ${pdfAtendente.trim()}`; } else { nome += ` Geral`; }
     let dataStr = "";
     if (pdfDataInicio && pdfDataFim && pdfDataInicio !== pdfDataFim) {
       dataStr = `${formatarData(pdfDataInicio).replace(/\//g, '-')} a ${formatarData(pdfDataFim).replace(/\//g, '-')}`;
@@ -188,9 +211,8 @@ function App() {
     } else if (pdfDataFim) {
       dataStr = formatarData(pdfDataFim).replace(/\//g, '-');
     } else {
-      dataStr = formatarData(hojePadrao).replace(/\//g, '-'); // Data atual se não tiver filtro
+      dataStr = formatarData(hojePadrao).replace(/\//g, '-');
     }
-
     return `${nome} - ${dataStr}`;
   }
 
@@ -210,11 +232,10 @@ function App() {
     doc.setFontSize(18); doc.text("Relatório Geral de Atendimentos - T.I.", 14, 22)
     doc.setFontSize(10); doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 30)
 
-    const colunas = ["Data do B.O", "Empresa", "Func.", "Categ.", "Status", "Problema", "Atendente"]
-    const linhas = dados.map(r => [ formatarData(r.data_atendimento || r.criado_em.split('T')[0]), r.empresa, r.funcionario || '-', r.categoria || '-', r.status || '-', r.solit_prob, r.atendente_nome || `ID ${r.atendente}` ])
+    const colunas = ["Data do B.O", "Empresa", "Func.", "Categ.", "Status", "Problema", "Equipe"]
+    const linhas = dados.map(r => [ formatarData(r.data_atendimento || r.criado_em.split('T')[0]), r.empresa, r.funcionario || '-', r.categoria || '-', r.status || '-', r.solit_prob, r.atendente_nome ])
     autoTable(doc, { head: [colunas], body: linhas, startY: 35, styles: { fontSize: 8, cellPadding: 2 }, headStyles: { fillColor: [50, 184, 247] }, columnStyles: { 5: { cellWidth: 80 } } })
     
-    // Aplicando a função do nome dinâmico no PDF
     doc.save(`${gerarNomeArquivo()}.pdf`)
   }
 
@@ -243,14 +264,13 @@ function App() {
       texto += `Problema:    ${r.solit_prob}\n`;
       texto += `Resolução:   ${r.resolucao}\n`;
       if (r.obs) texto += `OBS:         ${r.obs}\n`;
-      texto += `Atendente:   ${r.atendente_nome || r.atendente}\n`;
+      texto += `Equipe:      ${r.atendente_nome}\n`;
       texto += `--------------------------------------------------\n\n`;
     });
 
     const blob = new Blob([texto], { type: 'text/plain;charset=utf-8' });
     const link = document.createElement('a'); link.href = URL.createObjectURL(blob); 
     
-    // Aplicando a função do nome dinâmico no TXT
     link.download = `${gerarNomeArquivo()}.txt`;
     
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
@@ -273,13 +293,8 @@ function App() {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: tema.fundoMain, display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'Arial, sans-serif', transition: '0.3s' }}>
         <style>{`body { margin: 0; padding: 0; box-sizing: border-box; background-color: ${tema.fundoMain}; }`}</style>
-        
         <div style={{ backgroundColor: tema.fundoCard, padding: '40px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px' }}>
-          
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-            <img src={logoImg} alt="Logo Globalnet" style={{ maxWidth: '180px', maxHeight: '80px' }} />
-          </div>
-
+          <div style={{ textAlign: 'center', marginBottom: '20px' }}><img src={logoImg} alt="Logo Globalnet" style={{ maxWidth: '180px', maxHeight: '80px' }} /></div>
           <h2 style={{ textAlign: 'center', color: tema.texto1, marginBottom: '30px', marginTop: 0 }}>Login</h2>
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <input type="text" placeholder="Usuário" required value={username} onChange={(e) => setUsername(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, boxSizing: 'border-box' }} />
@@ -316,26 +331,22 @@ function App() {
         <p style={{ margin: '5px 0', fontSize: '14px', color: tema.texto1 }}><strong>RES:</strong> {relatorio.resolucao}</p>
         {relatorio.obs && <p style={{ margin: '5px 0', fontSize: '14px', color: tema.texto1 }}><strong>OBS:</strong> {relatorio.obs}</p>}
         
-        <div style={{ marginTop: '15px', paddingTop: '10px', borderTop: `1px solid ${tema.borda}`, fontSize: '0.8em', color: tema.texto2 }}>Atendente: {relatorio.atendente_nome} | Lançado no sistema em: {new Date(relatorio.criado_em).toLocaleString('pt-BR')}</div>
+        <div style={{ marginTop: '15px', paddingTop: '10px', borderTop: `1px solid ${tema.borda}`, fontSize: '0.8em', color: tema.texto2 }}>Equipe: <span style={{fontWeight: 'bold'}}>{relatorio.atendente_nome}</span> | Lançado no sistema em: {new Date(relatorio.criado_em).toLocaleString('pt-BR')}</div>
       </div>
     )
   }
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: tema.fundoMain, padding: '20px', fontFamily: 'Arial, sans-serif', transition: '0.3s' }}>
-      
       <style>{`body { margin: 0; padding: 0; box-sizing: border-box; background-color: ${tema.fundoMain}; }`}</style>
-
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', backgroundColor: tema.fundoCard, padding: '15px 20px', borderRadius: '10px', border: `1px solid ${tema.borda}` }}>
           <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
-            
             <div style={{ display: 'flex', alignItems: 'center', marginRight: '10px' }}>
               <img src={logoImg} alt="Logo Globalnet" style={{ height: '40px', marginRight: '15px' }} />
               <h2 style={{ margin: 0, color: tema.texto1, display: 'none' }}>Suporte de T.i.</h2> 
             </div>
-
             <button onClick={() => { setAbaAtiva('novo'); limparFormulario(); }} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'novo' ? '#32b8f7' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'novo' ? '#fff' : tema.texto1 }}>Atendimento</button>
             <button onClick={() => setAbaAtiva('historico')} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'historico' ? '#32b8f7' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'historico' ? '#fff' : tema.texto1 }}>Histórico</button>
             {isStaff && (
@@ -343,9 +354,7 @@ function App() {
             )}
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={() => setIsDarkMode(!isDarkMode)} style={{ padding: '8px 12px', backgroundColor: isDarkMode ? '#fde047' : '#1e293b', color: isDarkMode ? '#854d0e' : '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }} title="Mudar Tema">
-              {isDarkMode ? '☀️' : '🌙'}
-            </button>
+            <button onClick={() => setIsDarkMode(!isDarkMode)} style={{ padding: '8px 12px', backgroundColor: isDarkMode ? '#fde047' : '#1e293b', color: isDarkMode ? '#854d0e' : '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }} title="Mudar Tema">{isDarkMode ? '☀️' : '🌙'}</button>
             <button onClick={handleLogout} style={{ padding: '8px 15px', backgroundColor: '#ff4d4d', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Sair</button>
           </div>
         </div>
@@ -355,6 +364,24 @@ function App() {
            <h2 style={{ color: '#fff', marginTop: '0', marginBottom: '20px' }}>{editandoId ? '✏️ Editando Relatório' : 'Novo Atendimento'}</h2>
            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
              
+             {/* === CAIXAS DE SELEÇÃO DO ESQUADRÃO === */}
+             <div style={{ backgroundColor: tema.inputBg, padding: '15px', borderRadius: '6px', border: 'none' }}>
+                <label style={{ display: 'block', color: tema.texto2, fontWeight: 'bold', marginBottom: '10px', fontSize: '14px' }}>👥 Equipe que realizou o atendimento:</label>
+                <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                  {usuarios.map(user => (
+                    <label key={user.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', color: tema.texto1, cursor: 'pointer', fontSize: '15px', backgroundColor: isDarkMode ? '#334155' : '#f1f5f9', padding: '8px 12px', borderRadius: '20px' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={atendentesSelecionados.includes(user.id)}
+                        onChange={() => handleToggleAtendente(user.id)}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                      />
+                      {user.username}
+                    </label>
+                  ))}
+                </div>
+             </div>
+
              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
                <div style={{ flex: 1, minWidth: '200px' }}>
                  <input list="lista-empresas" placeholder="🏢 Nome da Empresa" required value={empresa} onChange={(e) => setEmpresa(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1 }} />
