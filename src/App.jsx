@@ -4,7 +4,7 @@ import { jwtDecode } from 'jwt-decode'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import logoImg from './assets/logo_Globalnet.png'
-import logoImgDark from './assets/capturar-removebg-preview.png'
+import logoImgDark from './assets/logo_Escura.png' // Coreção do nome do caminho da imagem
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '')
