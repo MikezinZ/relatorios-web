@@ -130,7 +130,7 @@ function App() {
 
   const apagarUsuario = (id) => {
     if (id === parseInt(atendenteId)) { alert("Você não pode apagar a si mesmo!"); return; }
-    if (window.confirm("⚠️ ATENÇÃO: Deseja APAGAR a conta e todos os relatórios vinculados a ela?")) {
+    if (window.confirm("?? ATENÇÃO: Deseja APAGAR a conta e todos os relatórios vinculados a ela?")) {
       axios.delete(`https://api-ti-relatorios.onrender.com/api/usuarios/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
       .then(() => buscarUsuarios())
       .catch(error => alert("Erro ao apagar usuário."))
@@ -300,14 +300,13 @@ function App() {
   }, {});
   const dadosGraficoStatus = Object.keys(contagemStatus).map(key => ({ name: key, value: contagemStatus[key] }));
   
-  // 3. NOVO: Contagem por Empresa (TOP 5 que dão mais trabalho)
+  // 3. Contagem por Empresa (TOP 5 que dão mais trabalho)
   const contagemEmpresas = relatorios.reduce((acc, rel) => {
     const emp = rel.empresa || 'Sem Nome';
     acc[emp] = (acc[emp] || 0) + 1;
     return acc;
   }, {});
   
-  // Transforma em array, ordena do maior para o menor e pega só os 5 primeiros
   const dadosGraficoEmpresas = Object.keys(contagemEmpresas)
     .map(key => ({ nome: key, chamados: contagemEmpresas[key] }))
     .sort((a, b) => b.chamados - a.chamados)
@@ -318,6 +317,9 @@ function App() {
     'Andamento': '#eab308',
     'Aberto': '#ef4444'
   };
+
+  // NOVO: Paleta de cores vibrantes para o gráfico de categorias
+  const CORES_CATEGORIAS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b'];
 
 
   if (!token) {
@@ -359,16 +361,16 @@ function App() {
     return (
       <div style={{ border: `1px solid ${tema.borda}`, padding: '20px', borderRadius: '10px', backgroundColor: tema.fundoCard, position: 'relative', transition: '0.3s' }}>
         <div style={{ position: 'absolute', top: '15px', right: '15px', display: 'flex', gap: '8px' }}>
-          <button onClick={() => iniciarEdicao(relatorio)} style={{ backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', color: tema.texto1, border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }} title="Editar">✏️</button>
-          <button onClick={() => apagarRelatorio(relatorio.id)} style={{ backgroundColor: '#fed7d7', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }} title="Excluir">🗑️</button>
+          <button onClick={() => iniciarEdicao(relatorio)} style={{ backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', color: tema.texto1, border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }} title="Editar">??</button>
+          <button onClick={() => apagarRelatorio(relatorio.id)} style={{ backgroundColor: '#fed7d7', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }} title="Excluir">???</button>
         </div>
         
         <h3 style={{ margin: '0 0 10px 0', color: '#32b8f7', fontSize: '18px', paddingRight: '70px' }}>{relatorio.empresa} {relatorio.funcionario && <span style={{ color: tema.texto2, fontSize: '14px' }}>- {relatorio.funcionario}</span>}</h3>
         
         <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '12px', backgroundColor: isDarkMode ? '#334155' : '#f1f5f9', color: tema.texto2, padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>📂 {relatorio.categoria || 'Outros'}</span>
-          <span style={{ fontSize: '12px', backgroundColor: corStatusBg, color: corStatusTxt, padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>{relatorio.status === 'Resolvido' ? '🟢' : relatorio.status === 'Andamento' ? '🟡' : '🔴'} {relatorio.status || 'Resolvido'}</span>
-          <span style={{ fontSize: '12px', backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', color: tema.texto1, padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>📅 {formatarData(relatorio.data_atendimento || relatorio.criado_em.split('T')[0])}</span>
+          <span style={{ fontSize: '12px', backgroundColor: isDarkMode ? '#334155' : '#f1f5f9', color: tema.texto2, padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>?? {relatorio.categoria || 'Outros'}</span>
+          <span style={{ fontSize: '12px', backgroundColor: corStatusBg, color: corStatusTxt, padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>{relatorio.status === 'Resolvido' ? '??' : relatorio.status === 'Andamento' ? '??' : '??'} {relatorio.status || 'Resolvido'}</span>
+          <span style={{ fontSize: '12px', backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', color: tema.texto1, padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>?? {formatarData(relatorio.data_atendimento || relatorio.criado_em.split('T')[0])}</span>
         </div>
 
         <p style={{ margin: '5px 0', fontSize: '14px', color: tema.texto1 }}><strong>PROB:</strong> {relatorio.solit_prob}</p>
@@ -409,19 +411,19 @@ function App() {
             )}
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={() => setIsDarkMode(!isDarkMode)} style={{ padding: '8px 12px', backgroundColor: isDarkMode ? '#fde047' : '#1e293b', color: isDarkMode ? '#854d0e' : '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }} title="Mudar Tema">{isDarkMode ? '☀️' : '🌙'}</button>
+            <button onClick={() => setIsDarkMode(!isDarkMode)} style={{ padding: '8px 12px', backgroundColor: isDarkMode ? '#fde047' : '#1e293b', color: isDarkMode ? '#854d0e' : '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }} title="Mudar Tema">{isDarkMode ? '??' : '??'}</button>
             <button onClick={handleLogout} style={{ padding: '8px 15px', backgroundColor: '#ff4d4d', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Sair</button>
           </div>
         </div>
 
         {abaAtiva === 'novo' && (
            <div style={{ backgroundColor: editandoId ? (isDarkMode ? '#b45309' : '#d97706') : (isDarkMode ? '#1e293b' : '#475569'), padding: '30px', borderRadius: '10px', transition: '0.3s', border: `1px solid ${tema.borda}` }}>
-           <h2 style={{ color: '#fff', marginTop: '0', marginBottom: '20px' }}>{editandoId ? '✏️ Editando Relatório' : 'Novo Atendimento'}</h2>
+           <h2 style={{ color: '#fff', marginTop: '0', marginBottom: '20px' }}>{editandoId ? '?? Editando Relatório' : 'Novo Atendimento'}</h2>
            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
              
              <div style={{ backgroundColor: tema.inputBg, padding: '15px', borderRadius: '6px', border: `1px solid ${tema.borda}` }}>
                 <label style={{ display: 'block', color: tema.texto2, fontWeight: 'bold', marginBottom: '12px', fontSize: '14px' }}>
-                  👥 Equipe no atendimento (Clique para marcar/desmarcar):
+                  ?? Equipe no atendimento (Clique para marcar/desmarcar):
                 </label>
 
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
@@ -447,7 +449,7 @@ function App() {
                           gap: '5px'
                         }}
                       >
-                        {isSelected ? '✓' : ''} {user.username}
+                        {isSelected ? '?' : ''} {user.username}
                       </button>
                     )
                   })}
@@ -456,11 +458,11 @@ function App() {
 
              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
                <div style={{ flex: 1, minWidth: '200px' }}>
-                 <input list="lista-empresas" placeholder="🏢 Nome da Empresa" required value={empresa} onChange={(e) => setEmpresa(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1 }} />
+                 <input list="lista-empresas" placeholder="?? Nome da Empresa" required value={empresa} onChange={(e) => setEmpresa(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1 }} />
                  <datalist id="lista-empresas">{empresasUnicas.map((emp, i) => <option key={i} value={emp} />)}</datalist>
                </div>
                <div style={{ flex: 1, minWidth: '200px' }}>
-                 <input list="lista-funcionarios" placeholder="👤 Funcionário (Opcional)" value={funcionario} onChange={(e) => setFuncionario(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1 }} />
+                 <input list="lista-funcionarios" placeholder="?? Funcionário (Opcional)" value={funcionario} onChange={(e) => setFuncionario(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1 }} />
                  <datalist id="lista-funcionarios">{funcionariosDaEmpresa.map((func, i) => <option key={i} value={func} />)}</datalist>
                </div>
              </div>
@@ -468,18 +470,22 @@ function App() {
              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: '200px' }}>
                   <select value={categoria} onChange={(e) => setCategoria(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1 }}>
-                    <option value="Hardware">🖥️ Hardware (Equipamento)</option>
-                    <option value="Rede">🌐 Rede / Internet</option>
-                    <option value="Sistemas">⚙️ Sistemas</option>
-                    <option value="Dúvida">❓ Dúvida de Usuário</option>
-                    <option value="Outros">🔧 Outros</option>
+                    <option value="Hardware / Equipamento">??? Hardware / Equipamento</option>
+                    <option value="Internet / Wi-Fi">?? Internet / Wi-Fi</option>
+                    <option value="Rede / Servidor">?? Rede Interna / Servidor</option>
+                    <option value="Sistemas / ERP">?? Sistemas / ERP</option>
+                    <option value="E-mail / Acessos">?? E-mail / Senhas</option>
+                    <option value="Impressora">??? Impressora</option>
+                    <option value="Telefonia">?? Telefonia</option>
+                    <option value="Dúvida de Usuário">? Dúvida de Usuário</option>
+                    <option value="Outros">?? Outros</option>
                   </select>
                 </div>
                 <div style={{ flex: 1, minWidth: '200px' }}>
                   <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1 }}>
-                    <option value="Resolvido">🟢 Resolvido</option>
-                    <option value="Andamento">🟡 Em Andamento</option>
-                    <option value="Aberto">🔴 Aberto (Pendente)</option>
+                    <option value="Resolvido">?? Resolvido</option>
+                    <option value="Andamento">?? Em Andamento</option>
+                    <option value="Aberto">?? Aberto (Pendente)</option>
                   </select>
                 </div>
                 
@@ -505,24 +511,24 @@ function App() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}><h2 style={{ color: tema.texto1, margin: 0 }}>Histórico</h2></div>
             
             <div style={{ backgroundColor: tema.fundoDestaque, padding: '15px', borderRadius: '8px', border: `1px solid ${tema.borda}`, marginBottom: '25px' }}>
-              <h4 style={{ margin: '0 0 10px 0', color: tema.texto1 }}>📄 Exportar Relatórios</h4>
+              <h4 style={{ margin: '0 0 10px 0', color: tema.texto1 }}>?? Exportar Relatórios</h4>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <div><label style={{ fontSize: '12px', color: tema.texto2, display: 'block' }}>Data Inicial</label><input type="date" value={pdfDataInicio} onChange={e => setPdfDataInicio(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1 }} /></div>
                 <div><label style={{ fontSize: '12px', color: tema.texto2, display: 'block' }}>Data Final</label><input type="date" value={pdfDataFim} onChange={e => setPdfDataFim(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1 }} /></div>
                 <div><label style={{ fontSize: '12px', color: tema.texto2, display: 'block' }}>Atendente</label><input type="text" placeholder="Nome..." value={pdfAtendente} onChange={e => setPdfAtendente(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1 }} /></div>
                 
                 <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
-                  <button onClick={gerarPDF} style={{ padding: '9px 15px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>📥 Baixar PDF</button>
-                  <button onClick={gerarTXT} style={{ padding: '9px 15px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>📝 Baixar TXT</button>
+                  <button onClick={gerarPDF} style={{ padding: '9px 15px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>?? Baixar PDF</button>
+                  <button onClick={gerarTXT} style={{ padding: '9px 15px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>?? Baixar TXT</button>
                 </div>
               </div>
             </div>
             
             <div style={{ display: 'flex', gap: '10px', marginBottom: '30px', flexWrap: 'wrap' }}>
-              <input type="text" placeholder="🔍 Buscar por empresa, funcionário, problema, categoria..." value={busca} onChange={(e) => setBusca(e.target.value)} style={{ flex: 1, minWidth: '200px', padding: '12px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, fontSize: '16px', boxSizing: 'border-box' }} />
+              <input type="text" placeholder="?? Buscar por empresa, funcionário, problema, categoria..." value={busca} onChange={(e) => setBusca(e.target.value)} style={{ flex: 1, minWidth: '200px', padding: '12px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, fontSize: '16px', boxSizing: 'border-box' }} />
               
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: tema.inputBg, padding: '0 15px', borderRadius: '6px', border: `1px solid ${tema.borda}` }}>
-                 <span style={{color: tema.texto2, fontSize: '14px', fontWeight: 'bold'}}>📅 Ver dia exato:</span>
+                 <span style={{color: tema.texto2, fontSize: '14px', fontWeight: 'bold'}}>?? Ver dia exato:</span>
                  <input type="date" value={filtroDataTela} onChange={(e) => setFiltroDataTela(e.target.value)} style={{ padding: '8px', border: 'none', backgroundColor: 'transparent', color: tema.texto1, outline: 'none', fontSize: '15px' }} />
                  {filtroDataTela && <button onClick={() => setFiltroDataTela('')} style={{ background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>Limpar</button>}
               </div>
@@ -531,19 +537,19 @@ function App() {
             {isBuscandoDataExata ? (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #32b8f7', paddingBottom: '5px', marginBottom: '15px' }}>
-                  <h3 style={{ color: tema.texto1, margin: 0 }}>📅 Resultados para {formatarData(filtroDataTela)}</h3>
+                  <h3 style={{ color: tema.texto1, margin: 0 }}>?? Resultados para {formatarData(filtroDataTela)}</h3>
                 </div>
                 {relatoriosParaMostrar.length === 0 ? <p style={{ color: tema.texto2, fontStyle: 'italic', marginBottom: '40px' }}>Nenhum atendimento registrado nesta data.</p> : <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '40px' }}>{relatoriosParaMostrar.map(relatorio => <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />)}</div>}
               </>
             ) : (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #32b8f7', paddingBottom: '5px', marginBottom: '15px' }}>
-                  <h3 style={{ color: tema.texto1, margin: 0 }}>📅 Hoje ({formatarData(hojePadrao)})</h3>
+                  <h3 style={{ color: tema.texto1, margin: 0 }}>?? Hoje ({formatarData(hojePadrao)})</h3>
                 </div>
 
                 {relatoriosHoje.length === 0 ? <p style={{ color: tema.texto2, fontStyle: 'italic', marginBottom: '40px' }}>Nenhum atendimento registrado hoje.</p> : <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '40px' }}>{relatoriosHoje.map(relatorio => <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />)}</div>}
                 
-                <h3 style={{ borderBottom: `2px solid ${tema.borda}`, paddingBottom: '5px', color: tema.texto1, marginBottom: '15px' }}>🕰️ Últimos Atendimentos</h3>
+                <h3 style={{ borderBottom: `2px solid ${tema.borda}`, paddingBottom: '5px', color: tema.texto1, marginBottom: '15px' }}>??? Últimos Atendimentos</h3>
                 {relatoriosAntigos.length === 0 ? <p style={{ color: tema.texto2, fontStyle: 'italic' }}>Nenhum histórico antigo encontrado.</p> : <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>{relatoriosAntigos.map(relatorio => <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />)}</div>}
               </>
             )}
@@ -552,7 +558,7 @@ function App() {
 
         {abaAtiva === 'gestao' && (
           <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '10px', border: `1px solid ${tema.borda}` }}>
-            <h2 style={{ color: tema.texto1, margin: '0 0 20px 0' }}>⚙️ Dashboard de Gestão</h2>
+            <h2 style={{ color: tema.texto1, margin: '0 0 20px 0' }}>?? Dashboard de Gestão</h2>
             
             {/* === CARDS DE RESUMO === */}
             <div style={{ display: 'flex', gap: '20px', marginBottom: '30px', flexWrap: 'wrap' }}>
@@ -575,7 +581,7 @@ function App() {
               
               {/* Gráfico 1: Status dos Atendimentos (Pizza) */}
               <div style={{ flex: 1, minWidth: '250px', backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '8px', border: `1px solid ${tema.borda}` }}>
-                <h3 style={{ margin: '0 0 20px 0', color: tema.texto1, textAlign: 'center', fontSize: '16px' }}>📊 Status dos Chamados</h3>
+                <h3 style={{ margin: '0 0 20px 0', color: tema.texto1, textAlign: 'center', fontSize: '16px' }}>?? Status dos Chamados</h3>
                 {relatorios.length > 0 ? (
                   <ResponsiveContainer width="100%" height={220}>
                     <PieChart>
@@ -593,7 +599,7 @@ function App() {
 
               {/* Gráfico 2: Atendimentos por Categoria (Barras Verticais) */}
               <div style={{ flex: 1, minWidth: '250px', backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '8px', border: `1px solid ${tema.borda}` }}>
-                <h3 style={{ margin: '0 0 20px 0', color: tema.texto1, textAlign: 'center', fontSize: '16px' }}>📈 Chamados por Categoria</h3>
+                <h3 style={{ margin: '0 0 20px 0', color: tema.texto1, textAlign: 'center', fontSize: '16px' }}>?? Chamados por Categoria</h3>
                 {relatorios.length > 0 ? (
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={dadosGraficoCategoria} margin={{ top: 5, right: 10, left: -25, bottom: 5 }}>
@@ -601,15 +607,19 @@ function App() {
                       <XAxis dataKey="nome" stroke={tema.graficoTexto} tick={{fontSize: 11}} />
                       <YAxis stroke={tema.graficoTexto} tick={{fontSize: 11}} allowDecimals={false} />
                       <RechartsTooltip cursor={{fill: 'transparent'}} contentStyle={{ backgroundColor: tema.fundoCard, borderColor: tema.borda, color: tema.texto1 }} />
-                      <Bar dataKey="total" fill="#32b8f7" radius={[4, 4, 0, 0]} barSize={30} />
+                      <Bar dataKey="total" radius={[4, 4, 0, 0]} barSize={30}>
+                        {dadosGraficoCategoria.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={CORES_CATEGORIAS[index % CORES_CATEGORIAS.length]} />
+                        ))}
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 ) : <p style={{ textAlign: 'center', color: tema.texto2 }}>Sem dados suficientes.</p>}
               </div>
 
-              {/* NOVO - Gráfico 3: Clientes Que Mais Dão Trabalho (Barras Horizontais) */}
+              {/* Gráfico 3: Clientes Que Mais Dão Trabalho (Barras Horizontais) */}
               <div style={{ flex: 1, minWidth: '350px', backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '8px', border: `1px solid ${tema.borda}` }}>
-                <h3 style={{ margin: '0 0 20px 0', color: tema.texto1, textAlign: 'center', fontSize: '16px' }}>🏆 Top 5 Clientes Ofensores</h3>
+                <h3 style={{ margin: '0 0 20px 0', color: tema.texto1, textAlign: 'center', fontSize: '16px' }}>?? Top 5 Clientes Ofensores</h3>
                 {relatorios.length > 0 && dadosGraficoEmpresas.length > 0 ? (
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart layout="vertical" data={dadosGraficoEmpresas} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
@@ -628,7 +638,7 @@ function App() {
             {/* === GESTÃO DE USUÁRIOS E EQUIPE === */}
             <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: '250px', backgroundColor: editandoUsuarioId ? (isDarkMode ? '#713f12' : '#fef3c7') : tema.fundoDestaque, padding: '20px', borderRadius: '8px', border: `1px solid ${tema.borda}`, transition: '0.3s' }}>
-                <h3 style={{ margin: '0 0 15px 0', color: tema.texto1 }}>{editandoUsuarioId ? '✏️ Editando Atendente' : '👤 Novo Atendente'}</h3>
+                <h3 style={{ margin: '0 0 15px 0', color: tema.texto1 }}>{editandoUsuarioId ? '?? Editando Atendente' : '?? Novo Atendente'}</h3>
                 <form onSubmit={handleSalvarUsuario} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                   <input type="text" placeholder="Nome de Usuário" required value={novoUsername} onChange={e => setNovoUsername(e.target.value)} style={{ padding: '10px', borderRadius: '5px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1 }} />
                   <input type="password" placeholder={editandoUsuarioId ? "Nova Senha (vazio=manter)" : "Senha"} required={!editandoUsuarioId} value={novaSenha} onChange={e => setNovaSenha(e.target.value)} style={{ padding: '10px', borderRadius: '5px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1 }} />
@@ -652,7 +662,7 @@ function App() {
               </div>
 
               <div style={{ flex: 1, minWidth: '250px', backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '8px', border: `1px solid ${tema.borda}` }}>
-                <h3 style={{ margin: '0 0 15px 0', color: tema.texto1 }}>📋 Equipe Cadastrada</h3>
+                <h3 style={{ margin: '0 0 15px 0', color: tema.texto1 }}>?? Equipe Cadastrada</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '300px', overflowY: 'auto' }}>
                   {usuarios.map(user => (
                     <div key={user.id} style={{ padding: '12px', backgroundColor: tema.fundoCard, border: `1px solid ${tema.borda}`, borderRadius: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -664,8 +674,8 @@ function App() {
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '5px' }}>
-                        <button onClick={() => iniciarEdicaoUsuario(user)} style={{ backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', border: 'none', padding: '6px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>✏️</button>
-                        <button onClick={() => apagarUsuario(user.id)} style={{ backgroundColor: '#fed7d7', border: 'none', padding: '6px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>🗑️</button>
+                        <button onClick={() => iniciarEdicaoUsuario(user)} style={{ backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', border: 'none', padding: '6px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>??</button>
+                        <button onClick={() => apagarUsuario(user.id)} style={{ backgroundColor: '#fed7d7', border: 'none', padding: '6px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>???</button>
                       </div>
                     </div>
                   ))}
