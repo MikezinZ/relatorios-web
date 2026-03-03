@@ -3,6 +3,7 @@ import axios from 'axios'
 import { jwtDecode } from 'jwt-decode'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts'
 import logoImg from './assets/logo_Globalnet.png'
 
 function App() {
@@ -60,7 +61,8 @@ function App() {
     texto2: isDarkMode ? '#cbd5e1' : '#555555',
     borda: isDarkMode ? '#334155' : '#eaeaea',
     inputBg: isDarkMode ? '#0f172a' : '#ffffff',
-    fundoDestaque: isDarkMode ? '#334155' : '#f8fafc'
+    fundoDestaque: isDarkMode ? '#334155' : '#f8fafc',
+    graficoTexto: isDarkMode ? '#cbd5e1' : '#475569'
   }
 
   const handleLogin = (e) => {
@@ -264,9 +266,7 @@ function App() {
 
     const blob = new Blob([texto], { type: 'text/plain;charset=utf-8' });
     const link = document.createElement('a'); link.href = URL.createObjectURL(blob); 
-    
     link.download = `${gerarNomeArquivo()}.txt`;
-    
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
   }
 
@@ -283,6 +283,43 @@ function App() {
   const relatoriosHoje = !isBuscandoDataExata ? relatoriosParaMostrar.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) === hojePadrao) : [];
   const relatoriosAntigos = !isBuscandoDataExata ? relatoriosParaMostrar.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) !== hojePadrao) : [];
 
+  // === LÓGICA DE DADOS PARA OS GRÁFICOS DO DASHBOARD ===
+  // 1. Contagem por Categoria
+  const contagemCategorias = relatorios.reduce((acc, rel) => {
+    const cat = rel.categoria || 'Outros';
+    acc[cat] = (acc[cat] || 0) + 1;
+    return acc;
+  }, {});
+  const dadosGraficoCategoria = Object.keys(contagemCategorias).map(key => ({ nome: key, total: contagemCategorias[key] }));
+
+  // 2. Contagem por Status
+  const contagemStatus = relatorios.reduce((acc, rel) => {
+    const stat = rel.status || 'Resolvido';
+    acc[stat] = (acc[stat] || 0) + 1;
+    return acc;
+  }, {});
+  const dadosGraficoStatus = Object.keys(contagemStatus).map(key => ({ name: key, value: contagemStatus[key] }));
+  
+  // 3. NOVO: Contagem por Empresa (TOP 5 que dão mais trabalho)
+  const contagemEmpresas = relatorios.reduce((acc, rel) => {
+    const emp = rel.empresa || 'Sem Nome';
+    acc[emp] = (acc[emp] || 0) + 1;
+    return acc;
+  }, {});
+  
+  // Transforma em array, ordena do maior para o menor e pega só os 5 primeiros
+  const dadosGraficoEmpresas = Object.keys(contagemEmpresas)
+    .map(key => ({ nome: key, chamados: contagemEmpresas[key] }))
+    .sort((a, b) => b.chamados - a.chamados)
+    .slice(0, 5);
+
+  const CORES_STATUS = {
+    'Resolvido': '#10b981',
+    'Andamento': '#eab308',
+    'Aberto': '#ef4444'
+  };
+
+
   if (!token) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: tema.fundoMain, display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'Arial, sans-serif', transition: '0.3s' }}>
@@ -296,7 +333,6 @@ function App() {
               style={{ 
                 maxWidth: '180px', 
                 maxHeight: '80px',
-                // A MÁGICA: Zera as cores originais e inverte para BRANCO no modo escuro
                 filter: isDarkMode ? 'brightness(0) invert(1)' : 'none',
                 transition: 'filter 0.3s'
               }} 
@@ -359,7 +395,6 @@ function App() {
                 style={{ 
                   height: '40px', 
                   marginRight: '15px',
-                  // A MÁGICA TAMBÉM AQUI NO CABEÇALHO
                   filter: isDarkMode ? 'brightness(0) invert(1)' : 'none',
                   transition: 'filter 0.3s'
                 }} 
@@ -519,6 +554,7 @@ function App() {
           <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '10px', border: `1px solid ${tema.borda}` }}>
             <h2 style={{ color: tema.texto1, margin: '0 0 20px 0' }}>⚙️ Dashboard de Gestão</h2>
             
+            {/* === CARDS DE RESUMO === */}
             <div style={{ display: 'flex', gap: '20px', marginBottom: '30px', flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: '150px', backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '8px', borderLeft: '5px solid #3b82f6' }}>
                 <h4 style={{ margin: '0 0 10px 0', color: tema.texto2 }}>Total Atendimentos</h4>
@@ -534,6 +570,62 @@ function App() {
               </div>
             </div>
 
+            {/* === GRÁFICOS RECHARTS === */}
+            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginBottom: '40px' }}>
+              
+              {/* Gráfico 1: Status dos Atendimentos (Pizza) */}
+              <div style={{ flex: 1, minWidth: '250px', backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '8px', border: `1px solid ${tema.borda}` }}>
+                <h3 style={{ margin: '0 0 20px 0', color: tema.texto1, textAlign: 'center', fontSize: '16px' }}>📊 Status dos Chamados</h3>
+                {relatorios.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <PieChart>
+                      <Pie data={dadosGraficoStatus} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={5} dataKey="value">
+                        {dadosGraficoStatus.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={CORES_STATUS[entry.name] || '#3b82f6'} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip contentStyle={{ backgroundColor: tema.fundoCard, borderColor: tema.borda, color: tema.texto1 }} itemStyle={{ color: tema.texto1 }} />
+                      <Legend wrapperStyle={{ color: tema.texto1, fontSize: '12px' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : <p style={{ textAlign: 'center', color: tema.texto2 }}>Sem dados suficientes.</p>}
+              </div>
+
+              {/* Gráfico 2: Atendimentos por Categoria (Barras Verticais) */}
+              <div style={{ flex: 1, minWidth: '250px', backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '8px', border: `1px solid ${tema.borda}` }}>
+                <h3 style={{ margin: '0 0 20px 0', color: tema.texto1, textAlign: 'center', fontSize: '16px' }}>📈 Chamados por Categoria</h3>
+                {relatorios.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={dadosGraficoCategoria} margin={{ top: 5, right: 10, left: -25, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={tema.borda} vertical={false} />
+                      <XAxis dataKey="nome" stroke={tema.graficoTexto} tick={{fontSize: 11}} />
+                      <YAxis stroke={tema.graficoTexto} tick={{fontSize: 11}} allowDecimals={false} />
+                      <RechartsTooltip cursor={{fill: 'transparent'}} contentStyle={{ backgroundColor: tema.fundoCard, borderColor: tema.borda, color: tema.texto1 }} />
+                      <Bar dataKey="total" fill="#32b8f7" radius={[4, 4, 0, 0]} barSize={30} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : <p style={{ textAlign: 'center', color: tema.texto2 }}>Sem dados suficientes.</p>}
+              </div>
+
+              {/* NOVO - Gráfico 3: Clientes Que Mais Dão Trabalho (Barras Horizontais) */}
+              <div style={{ flex: 1, minWidth: '350px', backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '8px', border: `1px solid ${tema.borda}` }}>
+                <h3 style={{ margin: '0 0 20px 0', color: tema.texto1, textAlign: 'center', fontSize: '16px' }}>🏆 Top 5 Clientes Ofensores</h3>
+                {relatorios.length > 0 && dadosGraficoEmpresas.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart layout="vertical" data={dadosGraficoEmpresas} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={tema.borda} horizontal={false} />
+                      <XAxis type="number" stroke={tema.graficoTexto} tick={{fontSize: 11}} allowDecimals={false} />
+                      <YAxis type="category" dataKey="nome" stroke={tema.graficoTexto} tick={{fontSize: 11}} width={100} />
+                      <RechartsTooltip cursor={{fill: 'transparent'}} contentStyle={{ backgroundColor: tema.fundoCard, borderColor: tema.borda, color: tema.texto1 }} />
+                      <Bar dataKey="chamados" fill="#f43f5e" radius={[0, 4, 4, 0]} barSize={20} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : <p style={{ textAlign: 'center', color: tema.texto2 }}>Sem dados suficientes.</p>}
+              </div>
+
+            </div>
+
+            {/* === GESTÃO DE USUÁRIOS E EQUIPE === */}
             <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: '250px', backgroundColor: editandoUsuarioId ? (isDarkMode ? '#713f12' : '#fef3c7') : tema.fundoDestaque, padding: '20px', borderRadius: '8px', border: `1px solid ${tema.borda}`, transition: '0.3s' }}>
                 <h3 style={{ margin: '0 0 15px 0', color: tema.texto1 }}>{editandoUsuarioId ? '✏️ Editando Atendente' : '👤 Novo Atendente'}</h3>
