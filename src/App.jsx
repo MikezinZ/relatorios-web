@@ -474,18 +474,34 @@ function App() {
              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: '200px' }}>
                   <select value={categoria} onChange={(e) => setCategoria(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1 }}>
+  {/* A BAZUCA PESADA */}
                     <option value="Hardware / Equipamento">🖥️ Hardware / Equipamento</option>
-                    <option value="Sistema Operacional / Windows">🪟 Sistema Operacional / Windows</option>
+                    <option value="Sistema Operacional / Windows">💾 Sistema Operacional / Windows</option>
+                    <option value="Rede Interna / Servidor">📡 Rede Interna / Servidor</option>
                     <option value="Internet / Wi-Fi">🌐 Internet / Wi-Fi</option>
-                    <option value="Rede Interna / Servidor">🖧 Rede Interna / Servidor</option>
+                    
+                    {/* SISTEMAS E SOFTWARES */}
                     <option value="Sistemas / ERP">⚙️ Sistemas / ERP</option>
+                    <option value="Pacote Office / Softwares">📝 Pacote Office / Softwares</option>
+                    
+                    {/* COMUNICAÇÃO E ACESSOS */}
                     <option value="E-mail / Acessos">📧 E-mail / Acessos</option>
-                    <option value="Impressora">🖨️ Impressora</option>
+                    <option value="Acessos / Permissões / VPN">🔑 Acessos / Permissões / VPN</option>
                     <option value="Telefonia">📞 Telefonia</option>
-                    <option value="CFTV / Câmeras">📹 CFTV / Câmeras</option>
-                    <option value="Controle de Ponto / Biometria">🕒 Controle de Ponto / Biometria</option>
-                    <option value="Certificados Digitais">🔐 Certificados Digitais</option>
+                    <option value="Dispositivos Móveis / Celular">📱 Dispositivos Móveis / Celular</option>
+                    
+                    {/* SEGURANÇA E OUTROS EQUIPAMENTOS */}
+                    <option value="Segurança / Antivírus">🛡️ Segurança / Antivírus</option>
                     <option value="Backup / Restauração">💾 Backup / Restauração</option>
+                    <option value="Certificados Digitais">🔐 Certificados Digitais</option>
+                    <option value="Controle de Ponto / Biometria">🕒 Controle de Ponto / Biometria</option>
+                    <option value="CFTV / Câmeras">📹 CFTV / Câmeras</option>
+                    
+                    {/* PERIFÉRICOS E IMPRESSÃO */}
+                    <option value="Impressora">🖨️ Impressora</option>
+                    <option value="Periféricos (Mouse/Teclado/Fone)">🔌 Periféricos (Mouse/Teclado/Fone)</option>
+                    
+                    {/* GERAIS */}
                     <option value="Dúvida de Usuário">❓ Dúvida de Usuário</option>
                     <option value="Outros">🔧 Outros</option>
                   </select>
