@@ -8,12 +8,12 @@ import { Toaster, toast } from 'sonner'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 import logoImg from './assets/logo_Globalnet.png'
 
-// === A NOVA BIBLIOTECA DE ÍCONES ===
 import {
   Monitor, LayoutGrid, Network, Wifi, Settings, FileText, Mail, Key,
   Phone, Smartphone, Shield, HardDrive, Lock, Clock, Video, Printer,
   Mouse, HelpCircle, Wrench, Edit, Trash2, LogOut, Sun, Moon, Ticket,
-  CheckCircle2, AlertCircle, Clock3, Search, Calendar, FileDown, Check, Users
+  CheckCircle2, AlertCircle, Clock3, Search, Calendar, FileDown, Check, Users,
+  Filter, X // NOVOS ÍCONES
 } from 'lucide-react'
 
 function App() {
@@ -43,9 +43,14 @@ function App() {
   const [solitProb, setSolitProb] = useState('')
   const [resolucao, setResolucao] = useState('')
   const [obs, setObs] = useState('')
-  const [busca, setBusca] = useState('')
 
+  // === NOVOS ESTADOS PARA O FILTRO COMBINADO NO HISTÓRICO ===
+  const [busca, setBusca] = useState('')
   const [filtroDataTela, setFiltroDataTela] = useState('')
+  const [filtroCategoriaHist, setFiltroCategoriaHist] = useState('')
+  const [filtroStatusHist, setFiltroStatusHist] = useState('')
+  const [filtroAtendenteHist, setFiltroAtendenteHist] = useState('')
+
   const [editandoId, setEditandoId] = useState(null)
 
   const [pdfDataInicio, setPdfDataInicio] = useState('')
@@ -58,6 +63,9 @@ function App() {
   const [novaSenha, setNovaSenha] = useState('')
   const [novoIsStaff, setNovoIsStaff] = useState(false)
   const [novoIsActive, setNovoIsActive] = useState(true)
+
+  // === NOVO ESTADO DE CARREGAMENTO (SKELETONS) ===
+  const [isLoading, setIsLoading] = useState(true)
 
   const [animationParent] = useAutoAnimate()
 
@@ -102,12 +110,17 @@ function App() {
 
   useEffect(() => {
     if (token) {
+      setIsLoading(true); // Começa a carregar os esqueletos
       axios.get('https://api-ti-relatorios.onrender.com/api/relatorios/', { headers: { Authorization: `Bearer ${token}` } })
         .then(response => {
           const dados = response.data.results ? response.data.results : response.data;
           setRelatorios(dados);
+          setIsLoading(false); // Para os esqueletos
         })
-        .catch(error => console.error(error))
+        .catch(error => {
+          console.error(error);
+          setIsLoading(false);
+        })
 
       buscarUsuarios()
 
@@ -223,6 +236,11 @@ function App() {
     setAtendentesSelecionados(atendenteId ? [parseInt(atendenteId)] : []);
   }
 
+  // Lógica de limpar filtros do Histórico
+  const limparFiltrosHistorico = () => {
+    setBusca(''); setFiltroDataTela(''); setFiltroCategoriaHist(''); setFiltroStatusHist(''); setFiltroAtendenteHist('');
+  }
+
   const formatarData = (dataString) => {
     if (!dataString) return '';
     const [ano, mes, dia] = dataString.split('-');
@@ -303,15 +321,22 @@ function App() {
   const empresasUnicas = [...new Set(relatorios.map(r => r.empresa).filter(Boolean))];
   const funcionariosDaEmpresa = [...new Set(relatorios.filter(r => r.empresa === empresa).map(r => r.funcionario).filter(Boolean))];
 
-  let relatoriosParaMostrar = relatorios.filter((r) => { const t = busca.toLowerCase(); return (r.empresa?.toLowerCase().includes(t) || r.funcionario?.toLowerCase().includes(t) || r.solit_prob?.toLowerCase().includes(t) || r.resolucao?.toLowerCase().includes(t) || r.categoria?.toLowerCase().includes(t)) })
+  // === A NOVA LÓGICA DE FILTRO COMBINADO ===
+  const isFiltrando = busca !== '' || filtroDataTela !== '' || filtroCategoriaHist !== '' || filtroStatusHist !== '' || filtroAtendenteHist !== '';
 
-  if (filtroDataTela) {
-    relatoriosParaMostrar = relatoriosParaMostrar.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) === filtroDataTela);
-  }
+  const relatoriosFiltradosHist = relatorios.filter((r) => {
+    const tBusca = busca.toLowerCase();
+    const matchBusca = busca === '' || (r.empresa?.toLowerCase().includes(tBusca) || r.solit_prob?.toLowerCase().includes(tBusca) || r.resolucao?.toLowerCase().includes(tBusca) || r.funcionario?.toLowerCase().includes(tBusca));
+    const matchData = filtroDataTela === '' || (r.data_atendimento || r.criado_em.split('T')[0]) === filtroDataTela;
+    const matchCategoria = filtroCategoriaHist === '' || r.categoria === filtroCategoriaHist;
+    const matchStatus = filtroStatusHist === '' || r.status === filtroStatusHist;
+    const matchAtendente = filtroAtendenteHist === '' || r.atendente_nome?.toLowerCase().includes(filtroAtendenteHist.toLowerCase());
 
-  const isBuscandoDataExata = filtroDataTela !== '';
-  const relatoriosHoje = !isBuscandoDataExata ? relatoriosParaMostrar.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) === hojePadrao) : [];
-  const relatoriosAntigos = !isBuscandoDataExata ? relatoriosParaMostrar.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) !== hojePadrao) : [];
+    return matchBusca && matchData && matchCategoria && matchStatus && matchAtendente;
+  });
+
+  const relatoriosHoje = relatoriosFiltradosHist.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) === hojePadrao);
+  const relatoriosAntigos = relatoriosFiltradosHist.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) !== hojePadrao);
 
   const contagemCategorias = relatorios.reduce((acc, rel) => { const cat = rel.categoria || 'Outros'; acc[cat] = (acc[cat] || 0) + 1; return acc; }, {});
   const dadosGraficoCategoria = Object.keys(contagemCategorias).map(key => ({ nome: key, total: contagemCategorias[key] }));
@@ -323,7 +348,6 @@ function App() {
   const CORES_STATUS = { 'Resolvido': '#10b981', 'Andamento': '#eab308', 'Aberto': '#ef4444' };
   const CORES_CATEGORIAS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b', '#f97316', '#06b6d4', '#84cc16', '#d946ef', '#0ea5e9', '#eab308'];
 
-  // === INTELIGÊNCIA DOS ÍCONES DAS CATEGORIAS ===
   const renderizarIconeCategoria = (catText) => {
     if (!catText) return <Wrench size={14} />;
     const texto = catText.toLowerCase();
@@ -351,10 +375,8 @@ function App() {
   if (!token) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: tema.fundoMain, display: 'flex', justifyContent: 'center', alignItems: 'center', transition: '0.3s' }}>
-        {/* TOASTER LOGIN */}
         <Toaster theme={isDarkMode ? 'dark' : 'light'} richColors position="top-center" duration={5000} expand={true} />
 
-        {/* CSS GLOBAL (Fonte, Scrollbar, Focus) */}
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
           body { margin: 0; padding: 0; box-sizing: border-box; background-color: ${tema.fundoMain}; font-family: 'Inter', sans-serif; }
@@ -395,6 +417,19 @@ function App() {
     )
   }
 
+  // === NOVO: COMPONENTE SKELETON ===
+  const SkeletonCard = () => (
+    <div className="animate-pulse" style={{ padding: '20px', borderRadius: '12px', backgroundColor: tema.fundoCard, border: `1px solid ${tema.borda}`, display: 'flex', flexDirection: 'column', gap: '15px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+      <div style={{ height: '24px', width: '30%', backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', borderRadius: '6px' }}></div>
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ height: '26px', width: '100px', backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', borderRadius: '6px' }}></div>
+        <div style={{ height: '26px', width: '90px', backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', borderRadius: '6px' }}></div>
+      </div>
+      <div style={{ height: '14px', width: '90%', backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', borderRadius: '4px', marginTop: '10px' }}></div>
+      <div style={{ height: '14px', width: '70%', backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', borderRadius: '4px' }}></div>
+    </div>
+  );
+
   const CartaoRelatorio = ({ relatorio }) => {
     let corStatusBg = '#e2e8f0'; let corStatusTxt = '#475569'; let IconeStatus = CheckCircle2;
     if (relatorio.status === 'Resolvido') { corStatusBg = '#dcfce7'; corStatusTxt = '#166534'; IconeStatus = CheckCircle2; }
@@ -404,10 +439,8 @@ function App() {
     return (
       <div style={{ border: relatorio.is_ticket && relatorio.status !== 'Resolvido' ? '2px solid #f43f5e' : `1px solid ${tema.borda}`, padding: '20px', borderRadius: '12px', backgroundColor: tema.fundoCard, position: 'relative', transition: '0.3s', marginTop: relatorio.is_ticket ? '12px' : '0', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
 
-        {/* === ETIQUETA DO TICKET COM O EFEITO PULSANTE === */}
         {relatorio.is_ticket && (
           <span style={{ position: 'absolute', top: '-14px', left: '20px', backgroundColor: relatorio.status === 'Resolvido' ? '#10b981' : '#f43f5e', color: '#fff', padding: '6px 14px', borderRadius: '20px', fontWeight: 'bold', fontSize: '11px', border: `2px solid ${tema.fundoCard}`, boxShadow: '0 2px 4px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '0.5px' }}>
-
             {relatorio.status !== 'Resolvido' && (
               <span style={{ position: 'relative', display: 'flex', width: '8px', height: '8px' }}>
                 <span className="animate-ping" style={{ position: 'absolute', display: 'inline-flex', height: '100%', width: '100%', borderRadius: '50%', backgroundColor: '#fff', opacity: 0.7 }}></span>
@@ -454,7 +487,6 @@ function App() {
 
       <Toaster theme={isDarkMode ? 'dark' : 'light'} richColors position="top-center" duration={5000} expand={true} />
 
-      {/* === CSS GLOBAL EMBUTIDO (Fonte, Scrollbar e Pulse) === */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { margin: 0; padding: 0; box-sizing: border-box; background-color: ${tema.fundoMain}; font-family: 'Inter', sans-serif; }
@@ -474,9 +506,14 @@ function App() {
         @keyframes ping {
           75%, 100% { transform: scale(2.5); opacity: 0; }
         }
-        .animate-ping {
-          animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+        .animate-ping { animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite; }
+
+        /* Nova animação do Esqueleto */
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: .4; }
         }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
       `}</style>
 
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
@@ -494,7 +531,6 @@ function App() {
               <img src={logoImg} alt="Logo Globalnet" style={{ height: '40px', marginRight: '15px', filter: isDarkMode ? 'brightness(0) invert(1)' : 'none', transition: 'filter 0.3s' }} />
             </div>
 
-            {/* REMOVIDO O limparFormulario() DAQUI */}
             <button onClick={() => setAbaAtiva('novo')} style={{ padding: '10px 15px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', backgroundColor: abaAtiva === 'novo' ? '#32b8f7' : 'transparent', color: abaAtiva === 'novo' ? '#fff' : tema.texto1, transition: '0.2s', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Edit size={16} /> Atendimento
             </button>
@@ -559,7 +595,6 @@ function App() {
                 </div>
               </div>
 
-              {/* === AQUI VOLTAM OS EMOJIS (APENAS NA VISUALIZAÇÃO) === */}
               <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: '200px' }}>
                   <select value={categoria} onChange={(e) => setCategoria(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '8px', border: `1px solid ${tema.borda}`, fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1, outlineColor: '#32b8f7' }}>
@@ -607,7 +642,6 @@ function App() {
               <textarea placeholder="Resolução / O que foi feito" required value={resolucao} onChange={(e) => setResolucao(e.target.value)} style={{ padding: '15px', borderRadius: '8px', border: `1px solid ${tema.borda}`, minHeight: '80px', fontSize: '15px', resize: 'vertical', backgroundColor: tema.inputBg, color: tema.texto1, transition: '0.2s', fontFamily: 'inherit' }} />
               <textarea placeholder="Observações Adicionais (Opcional)" value={obs} onChange={(e) => setObs(e.target.value)} style={{ padding: '15px', borderRadius: '8px', border: `1px solid ${tema.borda}`, minHeight: '50px', fontSize: '15px', resize: 'vertical', backgroundColor: tema.inputBg, color: tema.texto1, transition: '0.2s', fontFamily: 'inherit' }} />
 
-              {/* === NOVO BOTÃO DE LIMPAR FORMULÁRIO (MANUAL) === */}
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                 <button type="submit" style={{ flex: 1, padding: '16px', backgroundColor: editandoId ? '#d97706' : '#32b8f7', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '16px', transition: '0.2s', boxShadow: editandoId ? '0 4px 10px rgba(217, 119, 6, 0.3)' : '0 4px 10px rgba(50, 184, 247, 0.3)' }}>
                   {editandoId ? 'Salvar Alterações' : 'Salvar Atendimento'}
@@ -623,6 +657,7 @@ function App() {
           </div>
         )}
 
+        {/* TELA 2: RADAR DE TICKETS */}
         {abaAtiva === 'tickets' && (
           <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '12px', border: `1px solid ${tema.borda}`, boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f43f5e', paddingBottom: '15px', marginBottom: '25px', flexWrap: 'wrap', gap: '15px' }}>
@@ -639,7 +674,12 @@ function App() {
             </div>
 
             <div ref={animationParent} style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
-              {(() => {
+              {isLoading ? (
+                <>
+                  <SkeletonCard />
+                  <SkeletonCard />
+                </>
+              ) : (() => {
                 const ticketsParaMostrar = relatorios.filter(r => r.is_ticket && (filtroTicket === 'pendentes' ? r.status !== 'Resolvido' : r.status === 'Resolvido'));
 
                 if (ticketsParaMostrar.length === 0) {
@@ -660,46 +700,86 @@ function App() {
           </div>
         )}
 
+        {/* TELA 3: HISTÓRICO COM FILTROS AVANÇADOS */}
         {abaAtiva === 'historico' && (
           <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '12px', border: `1px solid ${tema.borda}`, boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h2 style={{ color: tema.texto1, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}><Search size={24} color="#32b8f7" /> Histórico Completo</h2>
             </div>
 
+            {/* CAIXA DE FILTROS AVANÇADOS */}
             <div style={{ backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '10px', border: `1px solid ${tema.borda}`, marginBottom: '30px' }}>
-              <h4 style={{ margin: '0 0 15px 0', color: tema.texto1, display: 'flex', alignItems: 'center', gap: '8px' }}><FileDown size={18} /> Exportar Relatórios</h4>
-              <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <div><label style={{ fontSize: '12px', color: tema.texto2, display: 'block', marginBottom: '5px', fontWeight: '600' }}>Data Inicial</label><input type="date" value={pdfDataInicio} onChange={e => setPdfDataInicio(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1 }} /></div>
-                <div><label style={{ fontSize: '12px', color: tema.texto2, display: 'block', marginBottom: '5px', fontWeight: '600' }}>Data Final</label><input type="date" value={pdfDataFim} onChange={e => setPdfDataFim(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1 }} /></div>
-                <div><label style={{ fontSize: '12px', color: tema.texto2, display: 'block', marginBottom: '5px', fontWeight: '600' }}>Atendente (Opcional)</label><input type="text" placeholder="Nome..." value={pdfAtendente} onChange={e => setPdfAtendente(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1 }} /></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                <h4 style={{ margin: '0', color: tema.texto1, display: 'flex', alignItems: 'center', gap: '8px' }}><Filter size={18} /> Filtros de Busca</h4>
+                {isFiltrando && (
+                  <button onClick={limparFiltrosHistorico} style={{ background: 'transparent', color: '#f43f5e', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold', fontSize: '13px' }}>
+                    <X size={14} /> Limpar Tudo
+                  </button>
+                )}
+              </div>
 
-                <div style={{ display: 'flex', gap: '10px', marginTop: '22px' }}>
-                  <button onClick={gerarPDF} style={{ padding: '10px 18px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', transition: '0.2s', boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)' }}>Baixar PDF</button>
-                  <button onClick={gerarTXT} style={{ padding: '10px 18px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', transition: '0.2s', boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)' }}>Baixar TXT</button>
+              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: '200px', position: 'relative' }}>
+                  <Search size={16} style={{ position: 'absolute', top: '12px', left: '12px', color: tema.texto2 }} />
+                  <input type="text" placeholder="Buscar texto (empresa, problema...)" value={busca} onChange={(e) => setBusca(e.target.value)} style={{ width: '100%', padding: '10px 10px 10px 35px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, fontSize: '14px', boxSizing: 'border-box' }} />
+                </div>
+
+                <div style={{ flex: 1, minWidth: '150px' }}>
+                  <input type="date" value={filtroDataTela} onChange={(e) => setFiltroDataTela(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, fontSize: '14px', boxSizing: 'border-box' }} title="Filtrar por Dia" />
+                </div>
+
+                <div style={{ flex: 1, minWidth: '150px' }}>
+                  <select value={filtroStatusHist} onChange={(e) => setFiltroStatusHist(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, fontSize: '14px', boxSizing: 'border-box' }}>
+                    <option value="">Todos os Status</option>
+                    <option value="Resolvido">🟢 Resolvidos</option>
+                    <option value="Andamento">🟡 Em Andamento</option>
+                    <option value="Aberto">🔴 Abertos</option>
+                  </select>
+                </div>
+
+                <div style={{ flex: 1, minWidth: '150px' }}>
+                  <select value={filtroCategoriaHist} onChange={(e) => setFiltroCategoriaHist(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, fontSize: '14px', boxSizing: 'border-box' }}>
+                    <option value="">Todas as Categorias</option>
+                    <option value="Hardware / Equipamento">Hardware / Equipamento</option>
+                    <option value="Sistema Operacional / Windows">Sistema Operacional / Windows</option>
+                    <option value="Rede Interna / Servidor">Rede Interna / Servidor</option>
+                    <option value="Internet / Wi-Fi">Internet / Wi-Fi</option>
+                    <option value="Sistemas / ERP">Sistemas / ERP</option>
+                    <option value="Pacote Office / Softwares">Pacote Office / Softwares</option>
+                    <option value="Impressora">Impressora</option>
+                    <option value="Outros">Outros</option>
+                  </select>
                 </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '15px', marginBottom: '30px', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: '200px', position: 'relative' }}>
-                <Search size={18} style={{ position: 'absolute', top: '14px', left: '14px', color: tema.texto2 }} />
-                <input type="text" placeholder="Buscar por empresa, problema, categoria..." value={busca} onChange={(e) => setBusca(e.target.value)} style={{ width: '100%', padding: '14px 14px 14px 42px', borderRadius: '8px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, fontSize: '15px', boxSizing: 'border-box', transition: '0.2s' }} />
-              </div>
+            <div style={{ backgroundColor: tema.fundoDestaque, padding: '15px', borderRadius: '10px', border: `1px solid ${tema.borda}`, marginBottom: '30px' }}>
+              <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{ color: tema.texto1, fontSize: '14px', fontWeight: 'bold' }}><FileDown size={16} style={{ marginRight: '5px', verticalAlign: 'middle' }} /> Exportar Dados:</span>
+                <div><label style={{ fontSize: '12px', color: tema.texto2, display: 'block' }}>Data Inicial</label><input type="date" value={pdfDataInicio} onChange={e => setPdfDataInicio(e.target.value)} style={{ padding: '6px', borderRadius: '4px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1 }} /></div>
+                <div><label style={{ fontSize: '12px', color: tema.texto2, display: 'block' }}>Data Final</label><input type="date" value={pdfDataFim} onChange={e => setPdfDataFim(e.target.value)} style={{ padding: '6px', borderRadius: '4px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1 }} /></div>
+                <div><label style={{ fontSize: '12px', color: tema.texto2, display: 'block' }}>Atendente</label><input type="text" placeholder="Nome..." value={pdfAtendente} onChange={e => setPdfAtendente(e.target.value)} style={{ padding: '6px', borderRadius: '4px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, width: '100px' }} /></div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: tema.inputBg, padding: '0 15px', borderRadius: '8px', border: `1px solid ${tema.borda}` }}>
-                <span style={{ color: tema.texto2, fontSize: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={16} /> Ver dia exato:</span>
-                <input type="date" value={filtroDataTela} onChange={(e) => setFiltroDataTela(e.target.value)} style={{ padding: '10px 5px', border: 'none', backgroundColor: 'transparent', color: tema.texto1, outline: 'none', fontSize: '15px' }} />
-                {filtroDataTela && <button onClick={() => setFiltroDataTela('')} style={{ background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', fontWeight: '600', fontSize: '12px' }}>Limpar</button>}
+                <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+                  <button onClick={gerarPDF} style={{ padding: '8px 12px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', transition: '0.2s' }}>PDF</button>
+                  <button onClick={gerarTXT} style={{ padding: '8px 12px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', transition: '0.2s' }}>TXT</button>
+                </div>
               </div>
             </div>
 
             <div ref={animationParent}>
-              {isBuscandoDataExata ? (
+              {isLoading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <SkeletonCard />
+                  <SkeletonCard />
+                  <SkeletonCard />
+                </div>
+              ) : isFiltrando ? (
                 <>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #32b8f7', paddingBottom: '10px', marginBottom: '20px' }}>
-                    <h3 style={{ color: tema.texto1, margin: 0, fontSize: '18px' }}>Resultados para {formatarData(filtroDataTela)}</h3>
+                    <h3 style={{ color: tema.texto1, margin: 0, fontSize: '18px' }}>Resultados da Busca ({relatoriosFiltradosHist.length})</h3>
                   </div>
-                  {relatoriosParaMostrar.length === 0 ? <p style={{ color: tema.texto2, fontStyle: 'italic', marginBottom: '40px', textAlign: 'center', padding: '20px' }}>Nenhum atendimento registrado nesta data.</p> : <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '40px' }}>{relatoriosParaMostrar.map(relatorio => <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />)}</div>}
+                  {relatoriosFiltradosHist.length === 0 ? <p style={{ color: tema.texto2, fontStyle: 'italic', marginBottom: '40px', textAlign: 'center', padding: '20px' }}>Nenhum atendimento corresponde aos filtros.</p> : <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '40px' }}>{relatoriosFiltradosHist.map(relatorio => <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />)}</div>}
                 </>
               ) : (
                 <>
@@ -717,6 +797,7 @@ function App() {
           </div>
         )}
 
+        {/* TELA 4: ADMINISTRAÇÃO */}
         {abaAtiva === 'gestao' && (
           <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '12px', border: `1px solid ${tema.borda}`, boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
             <h2 style={{ color: tema.texto1, margin: '0 0 25px 0', display: 'flex', alignItems: 'center', gap: '10px' }}><Settings size={24} color="#10b981" /> Dashboard de Gestão</h2>
