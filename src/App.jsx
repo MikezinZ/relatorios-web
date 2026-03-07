@@ -4,6 +4,9 @@ import { jwtDecode } from 'jwt-decode'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts'
+// === AS NOVAS IMPORTAÇÕES DE DESIGN AQUI ===
+import { Toaster, toast } from 'sonner'
+import { useAutoAnimate } from '@formkit/auto-animate/react'
 import logoImg from './assets/logo_Globalnet.png'
 
 function App() {
@@ -23,7 +26,6 @@ function App() {
   const [status, setStatus] = useState('Resolvido')
   
   const [isTicket, setIsTicket] = useState(false)
-  // === NOVO ESTADO: FILTRO DA ABA DE TICKETS ===
   const [filtroTicket, setFiltroTicket] = useState('pendentes') 
 
   const dataLocal = new Date();
@@ -50,6 +52,9 @@ function App() {
   const [novoIsStaff, setNovoIsStaff] = useState(false)
   const [novoIsActive, setNovoIsActive] = useState(true)
 
+  // === GANCHO DA ANIMAÇÃO ===
+  const [animationParent] = useAutoAnimate()
+
   useEffect(() => {
     localStorage.setItem('temaEscuro', isDarkMode)
   }, [isDarkMode])
@@ -65,8 +70,10 @@ function App() {
     graficoTexto: isDarkMode ? '#cbd5e1' : '#475569'
   }
 
+  // Substituímos os alerts por toasts do Sonner
   const handleLogin = (e) => {
     e.preventDefault()
+    const toastId = toast.loading('Acessando o sistema...')
     axios.post('https://api-ti-relatorios.onrender.com/api/token/', { username, password })
     .then(response => {
       const accessToken = response.data.access
@@ -76,14 +83,16 @@ function App() {
       setUsername(''); setPassword('');
       setAtendentesSelecionados([decoded.user_id]);
       if(decoded.is_staff) setAbaAtiva('gestao')
+      toast.success('Bem-vindo(a)!', { id: toastId })
     })
-    .catch(error => alert("Usuário ou senha incorretos!"))
+    .catch(error => toast.error("Usuário ou senha incorretos!", { id: toastId }))
   }
 
   const handleLogout = () => {
     setToken(''); setAtendenteId(null); setIsStaff(false); setAtendentesSelecionados([]);
     localStorage.removeItem('token'); localStorage.removeItem('atendenteId'); localStorage.removeItem('isStaff');
     setAbaAtiva('novo')
+    toast.info("Você saiu do sistema.")
   }
 
   useEffect(() => {
@@ -116,24 +125,24 @@ function App() {
 
     if (editandoUsuarioId) {
       axios.put(`https://api-ti-relatorios.onrender.com/api/usuarios/${editandoUsuarioId}/`, payload, { headers: { Authorization: `Bearer ${token}` } })
-      .then(response => { alert("Usuário atualizado com sucesso!"); limparFormularioUsuario(); buscarUsuarios(); })
-      .catch(error => alert("Erro ao atualizar usuário."))
+      .then(response => { toast.success("Usuário atualizado com sucesso!"); limparFormularioUsuario(); buscarUsuarios(); })
+      .catch(error => toast.error("Erro ao atualizar usuário."))
     } else {
-      if (!novaSenha) { alert("Senha é obrigatória para criar um usuário novo!"); return; }
+      if (!novaSenha) { toast.warning("Senha é obrigatória para criar um usuário novo!"); return; }
       axios.post('https://api-ti-relatorios.onrender.com/api/usuarios/', payload, { headers: { Authorization: `Bearer ${token}` } })
-      .then(response => { alert("Atendente criado com sucesso!"); limparFormularioUsuario(); buscarUsuarios(); })
-      .catch(error => alert("Erro! Verifique se esse nome já não existe no sistema."))
+      .then(response => { toast.success("Atendente criado com sucesso!"); limparFormularioUsuario(); buscarUsuarios(); })
+      .catch(error => toast.error("Erro! Verifique se esse nome já não existe no sistema."))
     }
   }
 
   const iniciarEdicaoUsuario = (user) => { setEditandoUsuarioId(user.id); setNovoUsername(user.username); setNovaSenha(''); setNovoIsStaff(user.is_staff); setNovoIsActive(user.is_active); }
 
   const apagarUsuario = (id) => {
-    if (id === parseInt(atendenteId)) { alert("Você não pode apagar a si mesmo!"); return; }
+    if (id === parseInt(atendenteId)) { toast.warning("Você não pode apagar a si mesmo!"); return; }
     if (window.confirm("⚠️ ATENÇÃO: Deseja APAGAR a conta e todos os relatórios vinculados a ela?")) {
       axios.delete(`https://api-ti-relatorios.onrender.com/api/usuarios/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(() => buscarUsuarios())
-      .catch(error => alert("Erro ao apagar usuário."))
+      .then(() => { toast.success("Conta apagada."); buscarUsuarios(); })
+      .catch(error => toast.error("Erro ao apagar usuário."))
     }
   }
 
@@ -149,16 +158,19 @@ function App() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (atendentesSelecionados.length === 0) { alert("Selecione pelo menos um atendente para este relatório!"); return; }
+    if (atendentesSelecionados.length === 0) { toast.warning("Selecione pelo menos um atendente para este relatório!"); return; }
 
     const dadosRelatorio = { empresa, funcionario, categoria, status, is_ticket: isTicket, data_atendimento: dataAtendimento, solit_prob: solitProb, resolucao, obs, atendentes: atendentesSelecionados }
+    const toastId = toast.loading('Salvando...')
     
     if (editandoId) {
       axios.put(`https://api-ti-relatorios.onrender.com/api/relatorios/${editandoId}/`, dadosRelatorio, { headers: { Authorization: `Bearer ${token}` } })
-      .then(response => { setRelatorios(relatorios.map(r => r.id === editandoId ? response.data : r)); limparFormulario(); alert("Atualizado!"); setAbaAtiva('historico'); })
+      .then(response => { setRelatorios(relatorios.map(r => r.id === editandoId ? response.data : r)); limparFormulario(); toast.success("Atualizado com sucesso!", { id: toastId }); setAbaAtiva('historico'); })
+      .catch(error => toast.error("Erro ao atualizar.", { id: toastId }))
     } else {
       axios.post('https://api-ti-relatorios.onrender.com/api/relatorios/', dadosRelatorio, { headers: { Authorization: `Bearer ${token}` } })
-      .then(response => { setRelatorios([response.data, ...relatorios]); limparFormulario(); alert("Salvo!"); })
+      .then(response => { setRelatorios([response.data, ...relatorios]); limparFormulario(); toast.success("Atendimento salvo!", { id: toastId }); })
+      .catch(error => toast.error("Erro ao salvar atendimento.", { id: toastId }))
     }
   }
 
@@ -177,7 +189,8 @@ function App() {
   const apagarRelatorio = (id) => {
     if (window.confirm("Apagar este relatório?")) {
       axios.delete(`https://api-ti-relatorios.onrender.com/api/relatorios/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(() => setRelatorios(relatorios.filter(r => r.id !== id)))
+      .then(() => { setRelatorios(relatorios.filter(r => r.id !== id)); toast.success("Relatório excluído."); })
+      .catch(() => toast.error("Erro ao apagar o relatório."))
     }
   }
 
@@ -194,7 +207,6 @@ function App() {
     return `${dia}/${mes}/${ano}`;
   }
 
-  // Lógica de Filtros e Exportação
   const gerarNomeArquivo = () => {
     let nome = "Atendimento";
     if (pdfAtendente) { nome += ` ${pdfAtendente.trim()}`; } else { nome += ` Geral`; }
@@ -216,7 +228,7 @@ function App() {
 
   const gerarPDF = () => {
     const dados = filtrarDadosParaExportacao()
-    if (dados.length === 0) { alert("Nenhum relatório encontrado com esses filtros!"); return; }
+    if (dados.length === 0) { toast.warning("Nenhum relatório encontrado com esses filtros!"); return; }
 
     const doc = new jsPDF('landscape')
     doc.setFontSize(18); doc.text("Relatório Geral de Atendimentos - T.I.", 14, 22)
@@ -227,11 +239,12 @@ function App() {
     autoTable(doc, { head: [colunas], body: linhas, startY: 35, styles: { fontSize: 8, cellPadding: 2 }, headStyles: { fillColor: [50, 184, 247] }, columnStyles: { 5: { cellWidth: 80 } } })
     
     doc.save(`${gerarNomeArquivo()}.pdf`)
+    toast.success("PDF baixado!")
   }
 
   const gerarTXT = () => {
     const dados = filtrarDadosParaExportacao()
-    if (dados.length === 0) { alert("Nenhum relatório encontrado com esses filtros!"); return; }
+    if (dados.length === 0) { toast.warning("Nenhum relatório encontrado com esses filtros!"); return; }
 
     let texto = `=== RELATÓRIOS DE ATENDIMENTO ===\n`;
     if (pdfDataInicio || pdfDataFim || pdfAtendente) {
@@ -262,6 +275,7 @@ function App() {
     const link = document.createElement('a'); link.href = URL.createObjectURL(blob); 
     link.download = `${gerarNomeArquivo()}.txt`;
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    toast.success("Arquivo TXT baixado!")
   }
 
   const empresasUnicas = [...new Set(relatorios.map(r => r.empresa).filter(Boolean))];
@@ -277,27 +291,11 @@ function App() {
   const relatoriosHoje = !isBuscandoDataExata ? relatoriosParaMostrar.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) === hojePadrao) : [];
   const relatoriosAntigos = !isBuscandoDataExata ? relatoriosParaMostrar.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) !== hojePadrao) : [];
 
-  // LÓGICA DE DADOS PARA OS GRÁFICOS DO DASHBOARD
-  const contagemCategorias = relatorios.reduce((acc, rel) => {
-    const cat = rel.categoria || 'Outros';
-    acc[cat] = (acc[cat] || 0) + 1;
-    return acc;
-  }, {});
+  const contagemCategorias = relatorios.reduce((acc, rel) => { const cat = rel.categoria || 'Outros'; acc[cat] = (acc[cat] || 0) + 1; return acc; }, {});
   const dadosGraficoCategoria = Object.keys(contagemCategorias).map(key => ({ nome: key, total: contagemCategorias[key] }));
-
-  const contagemStatus = relatorios.reduce((acc, rel) => {
-    const stat = rel.status || 'Resolvido';
-    acc[stat] = (acc[stat] || 0) + 1;
-    return acc;
-  }, {});
+  const contagemStatus = relatorios.reduce((acc, rel) => { const stat = rel.status || 'Resolvido'; acc[stat] = (acc[stat] || 0) + 1; return acc; }, {});
   const dadosGraficoStatus = Object.keys(contagemStatus).map(key => ({ name: key, value: contagemStatus[key] }));
-  
-  const contagemEmpresas = relatorios.reduce((acc, rel) => {
-    const emp = rel.empresa || 'Sem Nome';
-    acc[emp] = (acc[emp] || 0) + 1;
-    return acc;
-  }, {});
-  
+  const contagemEmpresas = relatorios.reduce((acc, rel) => { const emp = rel.empresa || 'Sem Nome'; acc[emp] = (acc[emp] || 0) + 1; return acc; }, {});
   const dadosGraficoEmpresas = Object.keys(contagemEmpresas).map(key => ({ nome: key, chamados: contagemEmpresas[key] })).sort((a, b) => b.chamados - a.chamados).slice(0, 5);
 
   const CORES_STATUS = { 'Resolvido': '#10b981', 'Andamento': '#eab308', 'Aberto': '#ef4444' };
@@ -306,6 +304,7 @@ function App() {
   if (!token) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: tema.fundoMain, display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'Arial, sans-serif', transition: '0.3s' }}>
+        <Toaster theme={isDarkMode ? 'dark' : 'light'} richColors position="bottom-right" />
         <style>{`body { margin: 0; padding: 0; box-sizing: border-box; background-color: ${tema.fundoMain}; }`}</style>
         <div style={{ backgroundColor: tema.fundoCard, padding: '40px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px' }}>
           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
@@ -322,7 +321,6 @@ function App() {
     )
   }
 
-  // === COMPONENTE DO CARTÃO ===
   const CartaoRelatorio = ({ relatorio }) => {
     let corStatusBg = '#e2e8f0'; let corStatusTxt = '#475569';
     if(relatorio.status === 'Resolvido') { corStatusBg = '#dcfce7'; corStatusTxt = '#166534'; }
@@ -330,9 +328,8 @@ function App() {
     if(relatorio.status === 'Aberto') { corStatusBg = '#fee2e2'; corStatusTxt = '#991b1b'; }
 
     return (
-      <div style={{ border: relatorio.is_ticket && relatorio.status !== 'Resolvido' ? '2px solid #f43f5e' : `1px solid ${tema.borda}`, padding: '20px', borderRadius: '10px', backgroundColor: tema.fundoCard, position: 'relative', transition: '0.3s', marginTop: relatorio.is_ticket ? '10px' : '0' }}>
+      <div style={{ border: relatorio.is_ticket && relatorio.status !== 'Resolvido' ? '2px solid #f43f5e' : `1px solid ${tema.borda}`, padding: '20px', borderRadius: '10px', backgroundColor: tema.fundoCard, position: 'relative', transition: '0.3s', marginTop: relatorio.is_ticket ? '10px' : '0', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
         
-        {/* === ETIQUETA DO TICKET (AGORA MOSTRA O NÚMERO GERADO PELO DJANGO) === */}
         {relatorio.is_ticket && (
           <span style={{ position: 'absolute', top: '-12px', left: '20px', backgroundColor: relatorio.status === 'Resolvido' ? '#10b981' : '#f43f5e', color: '#fff', padding: '4px 12px', borderRadius: '12px', fontWeight: 'bold', fontSize: '11px', border: `2px solid ${tema.fundoCard}`, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
             🎫 TICKET {relatorio.numero_ticket ? `#${relatorio.numero_ticket}` : ''} - {relatorio.status === 'Resolvido' ? 'FINALIZADO' : 'EM ABERTO'}
@@ -362,40 +359,51 @@ function App() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: tema.fundoMain, padding: '20px', fontFamily: 'Arial, sans-serif', transition: '0.3s' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: tema.fundoMain, padding: '20px', fontFamily: 'Arial, sans-serif', transition: 'background-color 0.3s' }}>
+      
+      <Toaster theme={isDarkMode ? 'dark' : 'light'} richColors position="bottom-right" />
       <style>{`body { margin: 0; padding: 0; box-sizing: border-box; background-color: ${tema.fundoMain}; }`}</style>
+      
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', backgroundColor: tema.fundoCard, padding: '15px 20px', borderRadius: '10px', border: `1px solid ${tema.borda}` }}>
+        {/* MENU SUPERIOR GLASSMORPHISM */}
+        <div style={{ 
+          position: 'sticky', top: '10px', zIndex: 100,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', 
+          backgroundColor: isDarkMode ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.8)', 
+          backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+          padding: '15px 20px', borderRadius: '12px', border: `1px solid ${tema.borda}`,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
+        }}>
           <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', marginRight: '10px' }}>
               <img src={logoImg} alt="Logo Globalnet" style={{ height: '40px', marginRight: '15px', filter: isDarkMode ? 'brightness(0) invert(1)' : 'none', transition: 'filter 0.3s' }} />
               <h2 style={{ margin: 0, color: tema.texto1, display: 'none' }}>Suporte</h2> 
             </div>
             
-            <button onClick={() => { setAbaAtiva('novo'); limparFormulario(); }} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'novo' ? '#32b8f7' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'novo' ? '#fff' : tema.texto1 }}>Atendimento</button>
-            <button onClick={() => setAbaAtiva('historico')} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'historico' ? '#32b8f7' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'historico' ? '#fff' : tema.texto1 }}>Histórico</button>
-            <button onClick={() => setAbaAtiva('tickets')} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'tickets' ? '#f43f5e' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'tickets' ? '#fff' : tema.texto1, display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <button onClick={() => { setAbaAtiva('novo'); limparFormulario(); }} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'novo' ? '#32b8f7' : 'transparent', color: abaAtiva === 'novo' ? '#fff' : tema.texto1, transition: '0.2s' }}>Atendimento</button>
+            <button onClick={() => setAbaAtiva('historico')} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'historico' ? '#32b8f7' : 'transparent', color: abaAtiva === 'historico' ? '#fff' : tema.texto1, transition: '0.2s' }}>Histórico</button>
+            <button onClick={() => setAbaAtiva('tickets')} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'tickets' ? '#f43f5e' : 'transparent', color: abaAtiva === 'tickets' ? '#fff' : tema.texto1, display: 'flex', alignItems: 'center', gap: '5px', transition: '0.2s' }}>
               Tickets
             </button>
 
             {isStaff && (
-              <button onClick={() => { setAbaAtiva('gestao'); limparFormularioUsuario(); }} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'gestao' ? '#10b981' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'gestao' ? '#fff' : tema.texto1 }}>Administração</button>
+              <button onClick={() => { setAbaAtiva('gestao'); limparFormularioUsuario(); }} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'gestao' ? '#10b981' : 'transparent', color: abaAtiva === 'gestao' ? '#fff' : tema.texto1, transition: '0.2s' }}>Administração</button>
             )}
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={() => setIsDarkMode(!isDarkMode)} style={{ padding: '8px 12px', backgroundColor: isDarkMode ? '#fde047' : '#1e293b', color: isDarkMode ? '#854d0e' : '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }} title="Mudar Tema">{isDarkMode ? '☀️' : '🌙'}</button>
-            <button onClick={handleLogout} style={{ padding: '8px 15px', backgroundColor: '#ff4d4d', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Sair</button>
+            <button onClick={() => setIsDarkMode(!isDarkMode)} style={{ padding: '8px 12px', backgroundColor: isDarkMode ? '#fde047' : '#e2e8f0', color: isDarkMode ? '#854d0e' : '#475569', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', transition: '0.2s' }} title="Mudar Tema">{isDarkMode ? '☀️' : '🌙'}</button>
+            <button onClick={handleLogout} style={{ padding: '8px 15px', backgroundColor: '#ff4d4d', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', transition: '0.2s' }}>Sair</button>
           </div>
         </div>
 
         {/* TELA 1: NOVO ATENDIMENTO */}
         {abaAtiva === 'novo' && (
-           <div style={{ backgroundColor: editandoId ? (isDarkMode ? '#b45309' : '#d97706') : (isDarkMode ? '#1e293b' : '#475569'), padding: '30px', borderRadius: '10px', transition: '0.3s', border: `1px solid ${tema.borda}` }}>
-           <h2 style={{ color: '#fff', marginTop: '0', marginBottom: '20px' }}>{editandoId ? '✏️ Editando Relatório' : 'Novo Atendimento'}</h2>
+           <div style={{ backgroundColor: editandoId ? (isDarkMode ? '#b45309' : '#d97706') : (isDarkMode ? '#1e293b' : '#ffffff'), padding: '30px', borderRadius: '12px', transition: '0.3s', border: `1px solid ${tema.borda}`, boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
+           <h2 style={{ color: editandoId ? '#fff' : tema.texto1, marginTop: '0', marginBottom: '20px' }}>{editandoId ? '✏️ Editando Relatório' : 'Novo Atendimento'}</h2>
            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
              
-             <div style={{ backgroundColor: tema.inputBg, padding: '15px', borderRadius: '6px', border: `1px solid ${tema.borda}` }}>
+             <div style={{ backgroundColor: tema.inputBg, padding: '15px', borderRadius: '8px', border: `1px solid ${tema.borda}` }}>
                 <label style={{ display: 'block', color: tema.texto2, fontWeight: 'bold', marginBottom: '12px', fontSize: '14px' }}>
                   👥 Equipe no atendimento:
                 </label>
@@ -405,7 +413,7 @@ function App() {
                     return (
                       <button
                         key={user.id} type="button" onClick={() => handleToggleAtendente(user.id)}
-                        style={{ padding: '8px 14px', borderRadius: '20px', border: isSelected ? 'none' : `1px solid ${tema.borda}`, backgroundColor: isSelected ? '#32b8f7' : (isDarkMode ? '#1e293b' : '#f1f5f9'), color: isSelected ? '#fff' : tema.texto1, cursor: 'pointer', fontWeight: isSelected ? 'bold' : 'normal', transition: 'all 0.2s', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '5px' }}
+                        style={{ padding: '8px 14px', borderRadius: '20px', border: isSelected ? 'none' : `1px solid ${tema.borda}`, backgroundColor: isSelected ? '#32b8f7' : (isDarkMode ? '#0f172a' : '#f1f5f9'), color: isSelected ? '#fff' : tema.texto1, cursor: 'pointer', fontWeight: isSelected ? 'bold' : 'normal', transition: 'all 0.2s', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '5px' }}
                       >
                         {isSelected ? '✓' : ''} {user.username}
                       </button>
@@ -416,18 +424,18 @@ function App() {
 
              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
                <div style={{ flex: 1, minWidth: '200px' }}>
-                 <input list="lista-empresas" placeholder="🏢 Nome da Empresa" required value={empresa} onChange={(e) => setEmpresa(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1 }} />
+                 <input list="lista-empresas" placeholder="🏢 Nome da Empresa" required value={empresa} onChange={(e) => setEmpresa(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: `1px solid ${tema.borda}`, fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1, outlineColor: '#32b8f7' }} />
                  <datalist id="lista-empresas">{empresasUnicas.map((emp, i) => <option key={i} value={emp} />)}</datalist>
                </div>
                <div style={{ flex: 1, minWidth: '200px' }}>
-                 <input list="lista-funcionarios" placeholder="👤 Funcionário (Opcional)" value={funcionario} onChange={(e) => setFuncionario(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1 }} />
+                 <input list="lista-funcionarios" placeholder="👤 Funcionário (Opcional)" value={funcionario} onChange={(e) => setFuncionario(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: `1px solid ${tema.borda}`, fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1, outlineColor: '#32b8f7' }} />
                  <datalist id="lista-funcionarios">{funcionariosDaEmpresa.map((func, i) => <option key={i} value={func} />)}</datalist>
                </div>
              </div>
 
              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: '200px' }}>
-                  <select value={categoria} onChange={(e) => setCategoria(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1 }}>
+                  <select value={categoria} onChange={(e) => setCategoria(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: `1px solid ${tema.borda}`, fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1, outlineColor: '#32b8f7' }}>
                     <option value="Hardware / Equipamento">🖥️ Hardware / Equipamento</option>
                     <option value="Sistema Operacional / Windows">🪟 Sistema Operacional / Windows</option>
                     <option value="Rede Interna / Servidor">🖧 Rede Interna / Servidor</option>
@@ -450,43 +458,42 @@ function App() {
                   </select>
                 </div>
                 <div style={{ flex: 1, minWidth: '200px' }}>
-                  <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1 }}>
+                  <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: `1px solid ${tema.borda}`, fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1, outlineColor: '#32b8f7' }}>
                     <option value="Resolvido">🟢 Resolvido</option>
                     <option value="Andamento">🟡 Em Andamento</option>
                     <option value="Aberto">🔴 Aberto (Pendente)</option>
                   </select>
                 </div>
                 <div style={{ flex: 1, minWidth: '150px' }}>
-                  <input type="date" required value={dataAtendimento} onChange={(e) => setDataAtendimento(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1 }} title="Data em que o serviço foi realizado" />
+                  <input type="date" required value={dataAtendimento} onChange={(e) => setDataAtendimento(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: `1px solid ${tema.borda}`, fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1, outlineColor: '#32b8f7' }} title="Data em que o serviço foi realizado" />
                 </div>
              </div>
 
-             <div onClick={() => setIsTicket(!isTicket)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '15px', backgroundColor: isTicket ? (isDarkMode ? '#4c0519' : '#ffe4e6') : tema.inputBg, borderRadius: '6px', border: `2px dashed ${isTicket ? '#f43f5e' : tema.borda}`, cursor: 'pointer', transition: '0.3s' }}>
-                <input type="checkbox" checked={isTicket} readOnly style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+             <div onClick={() => setIsTicket(!isTicket)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '15px', backgroundColor: isTicket ? (isDarkMode ? '#4c0519' : '#ffe4e6') : tema.inputBg, borderRadius: '8px', border: `2px dashed ${isTicket ? '#f43f5e' : tema.borda}`, cursor: 'pointer', transition: '0.3s' }}>
+                <input type="checkbox" checked={isTicket} readOnly style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#f43f5e' }} />
                 <span style={{ color: isTicket ? '#fb7185' : tema.texto1, fontWeight: isTicket ? 'bold' : 'normal', fontSize: '15px' }}>
                   🎫 Sinalizar como TICKET
                 </span>
              </div>
 
-             <textarea placeholder="SOLIT/PROB" required value={solitProb} onChange={(e) => setSolitProb(e.target.value)} style={{ padding: '12px', borderRadius: '6px', border: 'none', minHeight: '80px', fontSize: '15px', resize: 'vertical', backgroundColor: tema.inputBg, color: tema.texto1 }} />
-             <textarea placeholder="RESOLUÇÃO" required value={resolucao} onChange={(e) => setResolucao(e.target.value)} style={{ padding: '12px', borderRadius: '6px', border: 'none', minHeight: '80px', fontSize: '15px', resize: 'vertical', backgroundColor: tema.inputBg, color: tema.texto1 }} />
-             <textarea placeholder="OBS (Opcional)" value={obs} onChange={(e) => setObs(e.target.value)} style={{ padding: '12px', borderRadius: '6px', border: 'none', minHeight: '50px', fontSize: '15px', resize: 'vertical', backgroundColor: tema.inputBg, color: tema.texto1 }} />
+             <textarea placeholder="SOLIT/PROB" required value={solitProb} onChange={(e) => setSolitProb(e.target.value)} style={{ padding: '15px', borderRadius: '8px', border: `1px solid ${tema.borda}`, minHeight: '80px', fontSize: '15px', resize: 'vertical', backgroundColor: tema.inputBg, color: tema.texto1, outlineColor: '#32b8f7' }} />
+             <textarea placeholder="RESOLUÇÃO" required value={resolucao} onChange={(e) => setResolucao(e.target.value)} style={{ padding: '15px', borderRadius: '8px', border: `1px solid ${tema.borda}`, minHeight: '80px', fontSize: '15px', resize: 'vertical', backgroundColor: tema.inputBg, color: tema.texto1, outlineColor: '#32b8f7' }} />
+             <textarea placeholder="OBS (Opcional)" value={obs} onChange={(e) => setObs(e.target.value)} style={{ padding: '15px', borderRadius: '8px', border: `1px solid ${tema.borda}`, minHeight: '50px', fontSize: '15px', resize: 'vertical', backgroundColor: tema.inputBg, color: tema.texto1, outlineColor: '#32b8f7' }} />
              
              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-               <button type="submit" style={{ flex: 1, padding: '15px', backgroundColor: '#32b8f7', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>{editandoId ? 'Salvar Alterações' : 'Salvar Atendimento'}</button>
-               {editandoId && <button type="button" onClick={() => { limparFormulario(); setAbaAtiva('historico'); }} style={{ padding: '15px', backgroundColor: '#e2e8f0', color: '#4a5568', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>Cancelar</button>}
+               <button type="submit" style={{ flex: 1, padding: '15px', backgroundColor: '#32b8f7', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', transition: '0.2s', boxShadow: '0 4px 6px rgba(50, 184, 247, 0.3)' }}>{editandoId ? 'Salvar Alterações' : 'Salvar Atendimento'}</button>
+               {editandoId && <button type="button" onClick={() => { limparFormulario(); setAbaAtiva('historico'); }} style={{ padding: '15px', backgroundColor: '#e2e8f0', color: '#4a5568', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', transition: '0.2s' }}>Cancelar</button>}
              </div>
            </form>
          </div>
         )}
 
-        {/* === TELA 2: RADAR DE TICKETS (COM O FILTRO) === */}
+        {/* === TELA 2: RADAR DE TICKETS === */}
         {abaAtiva === 'tickets' && (
-          <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '10px', border: `1px solid ${tema.borda}` }}>
+          <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '12px', border: `1px solid ${tema.borda}`, boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f43f5e', paddingBottom: '15px', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
-              <h2 style={{ color: tema.texto1, margin: 0 }}>🚨 Tickets</h2>
+              <h2 style={{ color: tema.texto1, margin: 0 }}>🚨 Radar de Tickets</h2>
               
-              {/* BOTÕES DE FILTRO */}
               <div style={{ display: 'flex', gap: '10px', backgroundColor: tema.inputBg, padding: '5px', borderRadius: '8px', border: `1px solid ${tema.borda}` }}>
                 <button onClick={() => setFiltroTicket('pendentes')} style={{ padding: '8px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: filtroTicket === 'pendentes' ? '#f43f5e' : 'transparent', color: filtroTicket === 'pendentes' ? '#fff' : tema.texto1, transition: '0.2s' }}>
                   Abertos / Andamento
@@ -497,34 +504,32 @@ function App() {
               </div>
             </div>
             
-            {/* LÓGICA PARA EXIBIR BASEADO NO BOTÃO CLICADO */}
-            {(() => {
-              const ticketsParaMostrar = relatorios.filter(r => r.is_ticket && (filtroTicket === 'pendentes' ? r.status !== 'Resolvido' : r.status === 'Resolvido'));
-              
-              if (ticketsParaMostrar.length === 0) {
-                return (
-                  <div style={{ textAlign: 'center', padding: '40px', backgroundColor: tema.fundoDestaque, borderRadius: '8px' }}>
-                    <span style={{ fontSize: '40px' }}>{filtroTicket === 'pendentes' ? '🎉' : '📂'}</span>
-                    <h3 style={{ color: tema.texto1, margin: '10px 0' }}>{filtroTicket === 'pendentes' ? 'Tudo limpo por aqui!' : 'Nenhum ticket finalizado ainda.'}</h3>
-                    <p style={{ color: tema.texto2, margin: 0 }}>{filtroTicket === 'pendentes' ? 'A equipe não tem nenhum ticket aberto no momento.' : 'Tickets finalizados ficarão arquivados aqui.'}</p>
-                  </div>
-                );
-              }
+            {/* O AUTO-ANIMATE */}
+            <div ref={animationParent} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {(() => {
+                const ticketsParaMostrar = relatorios.filter(r => r.is_ticket && (filtroTicket === 'pendentes' ? r.status !== 'Resolvido' : r.status === 'Resolvido'));
+                
+                if (ticketsParaMostrar.length === 0) {
+                  return (
+                    <div style={{ textAlign: 'center', padding: '40px', backgroundColor: tema.fundoDestaque, borderRadius: '8px' }}>
+                      <span style={{ fontSize: '40px' }}>{filtroTicket === 'pendentes' ? '🎉' : '📂'}</span>
+                      <h3 style={{ color: tema.texto1, margin: '10px 0' }}>{filtroTicket === 'pendentes' ? 'Tudo limpo por aqui!' : 'Nenhum ticket finalizado ainda.'}</h3>
+                      <p style={{ color: tema.texto2, margin: 0 }}>{filtroTicket === 'pendentes' ? 'A equipe não tem nenhum ticket aberto no momento.' : 'Quando vocês resolverem os BOs pesados, eles ficarão arquivados aqui.'}</p>
+                    </div>
+                  );
+                }
 
-              return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {ticketsParaMostrar.map(relatorio => (
-                    <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />
-                  ))}
-                </div>
-              );
-            })()}
+                return ticketsParaMostrar.map(relatorio => (
+                  <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />
+                ));
+              })()}
+            </div>
           </div>
         )}
 
         {/* TELA 3: HISTÓRICO GERAL */}
         {abaAtiva === 'historico' && (
-          <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '10px', border: `1px solid ${tema.borda}` }}>
+          <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '12px', border: `1px solid ${tema.borda}`, boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}><h2 style={{ color: tema.texto1, margin: 0 }}>Histórico Completo</h2></div>
             
             <div style={{ backgroundColor: tema.fundoDestaque, padding: '15px', borderRadius: '8px', border: `1px solid ${tema.borda}`, marginBottom: '25px' }}>
@@ -542,7 +547,7 @@ function App() {
             </div>
             
             <div style={{ display: 'flex', gap: '10px', marginBottom: '30px', flexWrap: 'wrap' }}>
-              <input type="text" placeholder="🔍 Buscar por empresa, funcionário, problema, categoria..." value={busca} onChange={(e) => setBusca(e.target.value)} style={{ flex: 1, minWidth: '200px', padding: '12px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, fontSize: '16px', boxSizing: 'border-box' }} />
+              <input type="text" placeholder="🔍 Buscar por empresa, funcionário, problema, categoria..." value={busca} onChange={(e) => setBusca(e.target.value)} style={{ flex: 1, minWidth: '200px', padding: '12px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, fontSize: '16px', boxSizing: 'border-box', outlineColor: '#32b8f7' }} />
               
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: tema.inputBg, padding: '0 15px', borderRadius: '6px', border: `1px solid ${tema.borda}` }}>
                  <span style={{color: tema.texto2, fontSize: '14px', fontWeight: 'bold'}}>📅 Ver dia exato:</span>
@@ -551,43 +556,46 @@ function App() {
               </div>
             </div>
             
-            {isBuscandoDataExata ? (
-              <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #32b8f7', paddingBottom: '5px', marginBottom: '15px' }}>
-                  <h3 style={{ color: tema.texto1, margin: 0 }}>📅 Resultados para {formatarData(filtroDataTela)}</h3>
-                </div>
-                {relatoriosParaMostrar.length === 0 ? <p style={{ color: tema.texto2, fontStyle: 'italic', marginBottom: '40px' }}>Nenhum atendimento registrado nesta data.</p> : <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '40px' }}>{relatoriosParaMostrar.map(relatorio => <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />)}</div>}
-              </>
-            ) : (
-              <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #32b8f7', paddingBottom: '5px', marginBottom: '15px' }}>
-                  <h3 style={{ color: tema.texto1, margin: 0 }}>📅 Hoje ({formatarData(hojePadrao)})</h3>
-                </div>
+            {/* O AUTO-ANIMATE APLICADO NO HISTÓRICO TAMBÉM */}
+            <div ref={animationParent}>
+              {isBuscandoDataExata ? (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #32b8f7', paddingBottom: '5px', marginBottom: '15px' }}>
+                    <h3 style={{ color: tema.texto1, margin: 0 }}>📅 Resultados para {formatarData(filtroDataTela)}</h3>
+                  </div>
+                  {relatoriosParaMostrar.length === 0 ? <p style={{ color: tema.texto2, fontStyle: 'italic', marginBottom: '40px' }}>Nenhum atendimento registrado nesta data.</p> : <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '40px' }}>{relatoriosParaMostrar.map(relatorio => <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />)}</div>}
+                </>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #32b8f7', paddingBottom: '5px', marginBottom: '15px' }}>
+                    <h3 style={{ color: tema.texto1, margin: 0 }}>📅 Hoje ({formatarData(hojePadrao)})</h3>
+                  </div>
 
-                {relatoriosHoje.length === 0 ? <p style={{ color: tema.texto2, fontStyle: 'italic', marginBottom: '40px' }}>Nenhum atendimento registrado hoje.</p> : <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '40px' }}>{relatoriosHoje.map(relatorio => <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />)}</div>}
-                
-                <h3 style={{ borderBottom: `2px solid ${tema.borda}`, paddingBottom: '5px', color: tema.texto1, marginBottom: '15px' }}>🕰️ Últimos Atendimentos</h3>
-                {relatoriosAntigos.length === 0 ? <p style={{ color: tema.texto2, fontStyle: 'italic' }}>Nenhum histórico antigo encontrado.</p> : <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>{relatoriosAntigos.map(relatorio => <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />)}</div>}
-              </>
-            )}
+                  {relatoriosHoje.length === 0 ? <p style={{ color: tema.texto2, fontStyle: 'italic', marginBottom: '40px' }}>Nenhum atendimento registrado hoje.</p> : <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '40px' }}>{relatoriosHoje.map(relatorio => <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />)}</div>}
+                  
+                  <h3 style={{ borderBottom: `2px solid ${tema.borda}`, paddingBottom: '5px', color: tema.texto1, marginBottom: '15px' }}>🕰️ Últimos Atendimentos</h3>
+                  {relatoriosAntigos.length === 0 ? <p style={{ color: tema.texto2, fontStyle: 'italic' }}>Nenhum histórico antigo encontrado.</p> : <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>{relatoriosAntigos.map(relatorio => <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />)}</div>}
+                </>
+              )}
+            </div>
           </div>
         )}
 
         {/* TELA 4: ADMINISTRAÇÃO */}
         {abaAtiva === 'gestao' && (
-          <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '10px', border: `1px solid ${tema.borda}` }}>
+          <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '12px', border: `1px solid ${tema.borda}`, boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
             <h2 style={{ color: tema.texto1, margin: '0 0 20px 0' }}>⚙️ Dashboard de Gestão</h2>
             
             <div style={{ display: 'flex', gap: '20px', marginBottom: '30px', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: '150px', backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '8px', borderLeft: '5px solid #3b82f6' }}>
+              <div style={{ flex: 1, minWidth: '150px', backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '8px', borderLeft: '5px solid #3b82f6', transition: 'transform 0.2s', cursor: 'default' }} onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}>
                 <h4 style={{ margin: '0 0 10px 0', color: tema.texto2 }}>Total Atendimentos</h4>
                 <p style={{ margin: 0, fontSize: '28px', fontWeight: 'bold', color: tema.texto1 }}>{relatorios.length}</p>
               </div>
-              <div style={{ flex: 1, minWidth: '150px', backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '8px', borderLeft: '5px solid #10b981' }}>
+              <div style={{ flex: 1, minWidth: '150px', backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '8px', borderLeft: '5px solid #10b981', transition: 'transform 0.2s', cursor: 'default' }} onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}>
                 <h4 style={{ margin: '0 0 10px 0', color: tema.texto2 }}>Atendimentos Hoje</h4>
                 <p style={{ margin: 0, fontSize: '28px', fontWeight: 'bold', color: tema.texto1 }}>{relatoriosHoje.length}</p>
               </div>
-              <div style={{ flex: 1, minWidth: '150px', backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '8px', borderLeft: '5px solid #8b5cf6' }}>
+              <div style={{ flex: 1, minWidth: '150px', backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '8px', borderLeft: '5px solid #8b5cf6', transition: 'transform 0.2s', cursor: 'default' }} onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}>
                 <h4 style={{ margin: '0 0 10px 0', color: tema.texto2 }}>Empresas Atendidas</h4>
                 <p style={{ margin: 0, fontSize: '28px', fontWeight: 'bold', color: tema.texto1 }}>{empresasUnicas.length}</p>
               </div>
@@ -604,7 +612,7 @@ function App() {
                           <Cell key={`cell-${index}`} fill={CORES_STATUS[entry.name] || '#3b82f6'} />
                         ))}
                       </Pie>
-                      <RechartsTooltip contentStyle={{ backgroundColor: tema.fundoCard, borderColor: tema.borda, color: tema.texto1 }} itemStyle={{ color: tema.texto1 }} />
+                      <RechartsTooltip contentStyle={{ backgroundColor: tema.fundoCard, borderColor: tema.borda, color: tema.texto1, borderRadius: '8px' }} itemStyle={{ color: tema.texto1 }} />
                       <Legend wrapperStyle={{ color: tema.texto1, fontSize: '12px' }} />
                     </PieChart>
                   </ResponsiveContainer>
@@ -619,7 +627,7 @@ function App() {
                       <CartesianGrid strokeDasharray="3 3" stroke={tema.borda} vertical={false} />
                       <XAxis dataKey="nome" stroke={tema.graficoTexto} tick={{fontSize: 11}} />
                       <YAxis stroke={tema.graficoTexto} tick={{fontSize: 11}} allowDecimals={false} />
-                      <RechartsTooltip cursor={{fill: 'transparent'}} contentStyle={{ backgroundColor: tema.fundoCard, borderColor: tema.borda, color: tema.texto1 }} />
+                      <RechartsTooltip cursor={{fill: 'transparent'}} contentStyle={{ backgroundColor: tema.fundoCard, borderColor: tema.borda, color: tema.texto1, borderRadius: '8px' }} />
                       <Bar dataKey="total" radius={[4, 4, 0, 0]} barSize={30}>
                         {dadosGraficoCategoria.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={CORES_CATEGORIAS[index % CORES_CATEGORIAS.length]} />
@@ -638,7 +646,7 @@ function App() {
                       <CartesianGrid strokeDasharray="3 3" stroke={tema.borda} horizontal={false} />
                       <XAxis type="number" stroke={tema.graficoTexto} tick={{fontSize: 11}} allowDecimals={false} />
                       <YAxis type="category" dataKey="nome" stroke={tema.graficoTexto} tick={{fontSize: 11}} width={100} />
-                      <RechartsTooltip cursor={{fill: 'transparent'}} contentStyle={{ backgroundColor: tema.fundoCard, borderColor: tema.borda, color: tema.texto1 }} />
+                      <RechartsTooltip cursor={{fill: 'transparent'}} contentStyle={{ backgroundColor: tema.fundoCard, borderColor: tema.borda, color: tema.texto1, borderRadius: '8px' }} />
                       <Bar dataKey="chamados" fill="#f43f5e" radius={[0, 4, 4, 0]} barSize={20} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -673,7 +681,8 @@ function App() {
 
               <div style={{ flex: 1, minWidth: '250px', backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '8px', border: `1px solid ${tema.borda}` }}>
                 <h3 style={{ margin: '0 0 15px 0', color: tema.texto1 }}>📋 Equipe Cadastrada</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '300px', overflowY: 'auto' }}>
+                {/* O AUTO-ANIMATE APLICADO NA LISTA DE USUÁRIOS */}
+                <div ref={animationParent} style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '300px', overflowY: 'auto' }}>
                   {usuarios.map(user => (
                     <div key={user.id} style={{ padding: '12px', backgroundColor: tema.fundoCard, border: `1px solid ${tema.borda}`, borderRadius: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
