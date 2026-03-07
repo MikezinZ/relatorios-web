@@ -13,7 +13,7 @@ import {
   Phone, Smartphone, Shield, HardDrive, Lock, Clock, Video, Printer,
   Mouse, HelpCircle, Wrench, Edit, Trash2, LogOut, Sun, Moon, Ticket,
   CheckCircle2, AlertCircle, Clock3, Search, Calendar, FileDown, Check, Users,
-  Filter, X // NOVOS ÍCONES
+  Filter, X, Sheet // <-- Adicionei o ícone 'Sheet' aqui para o botão do Excel
 } from 'lucide-react'
 
 function App() {
@@ -44,7 +44,6 @@ function App() {
   const [resolucao, setResolucao] = useState('')
   const [obs, setObs] = useState('')
 
-  // === NOVOS ESTADOS PARA O FILTRO COMBINADO NO HISTÓRICO ===
   const [busca, setBusca] = useState('')
   const [filtroDataTela, setFiltroDataTela] = useState('')
   const [filtroCategoriaHist, setFiltroCategoriaHist] = useState('')
@@ -64,9 +63,7 @@ function App() {
   const [novoIsStaff, setNovoIsStaff] = useState(false)
   const [novoIsActive, setNovoIsActive] = useState(true)
 
-  // === NOVO ESTADO DE CARREGAMENTO (SKELETONS) ===
   const [isLoading, setIsLoading] = useState(true)
-
   const [animationParent] = useAutoAnimate()
 
   useEffect(() => {
@@ -110,12 +107,12 @@ function App() {
 
   useEffect(() => {
     if (token) {
-      setIsLoading(true); // Começa a carregar os esqueletos
+      setIsLoading(true);
       axios.get('https://api-ti-relatorios.onrender.com/api/relatorios/', { headers: { Authorization: `Bearer ${token}` } })
         .then(response => {
           const dados = response.data.results ? response.data.results : response.data;
           setRelatorios(dados);
-          setIsLoading(false); // Para os esqueletos
+          setIsLoading(false);
         })
         .catch(error => {
           console.error(error);
@@ -236,7 +233,6 @@ function App() {
     setAtendentesSelecionados(atendenteId ? [parseInt(atendenteId)] : []);
   }
 
-  // Lógica de limpar filtros do Histórico
   const limparFiltrosHistorico = () => {
     setBusca(''); setFiltroDataTela(''); setFiltroCategoriaHist(''); setFiltroStatusHist(''); setFiltroAtendenteHist('');
   }
@@ -318,10 +314,49 @@ function App() {
     toast.success("Arquivo TXT baixado!")
   }
 
+  // === NOVA FUNÇÃO DE GERAR CSV (EXCEL) ===
+  const gerarCSV = () => {
+    const dados = filtrarDadosParaExportacao();
+    if (dados.length === 0) { toast.warning("Nenhum relatório encontrado com esses filtros!"); return; }
+
+    // Cabeçalhos das colunas (Exatamente como o Power BI gosta de ler)
+    let csvContent = "Data,Empresa,Funcionário,Categoria,Status,Ticket,Problema,Resolução,Observações,Equipe\n";
+
+    const relatoriosEmOrdem = [...dados].reverse();
+
+    relatoriosEmOrdem.forEach(r => {
+      // Limpeza pesada para evitar que vírgulas e quebras de linha no texto quebrem a planilha
+      const data = formatarData(r.data_atendimento || r.criado_em.split('T')[0]);
+      const emp = `"${(r.empresa || '').replace(/"/g, '""')}"`;
+      const func = `"${(r.funcionario || '').replace(/"/g, '""')}"`;
+      const cat = `"${(r.categoria || '').replace(/"/g, '""')}"`;
+      const status = `"${(r.status || '').replace(/"/g, '""')}"`;
+      const ticket = r.is_ticket ? (r.numero_ticket ? `"#${r.numero_ticket}"` : '"Sim"') : '""';
+
+      const prob = `"${(r.solit_prob || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`;
+      const res = `"${(r.resolucao || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`;
+      const obs = `"${(r.obs || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`;
+      const equipe = `"${(r.atendente_nome || '').replace(/"/g, '""')}"`;
+
+      // Monta a linha e adiciona no arquivo
+      csvContent += `${data},${emp},${func},${cat},${status},${ticket},${prob},${res},${obs},${equipe}\n`;
+    });
+
+    // O \uFEFF é o BOM (Byte Order Mark), essencial para o Excel reconhecer os acentos em UTF-8
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${gerarNomeArquivo()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Planilha Excel exportada com sucesso!");
+  }
+
   const empresasUnicas = [...new Set(relatorios.map(r => r.empresa).filter(Boolean))];
   const funcionariosDaEmpresa = [...new Set(relatorios.filter(r => r.empresa === empresa).map(r => r.funcionario).filter(Boolean))];
 
-  // === A NOVA LÓGICA DE FILTRO COMBINADO ===
   const isFiltrando = busca !== '' || filtroDataTela !== '' || filtroCategoriaHist !== '' || filtroStatusHist !== '' || filtroAtendenteHist !== '';
 
   const relatoriosFiltradosHist = relatorios.filter((r) => {
@@ -417,7 +452,6 @@ function App() {
     )
   }
 
-  // === NOVO: COMPONENTE SKELETON ===
   const SkeletonCard = () => (
     <div className="animate-pulse" style={{ padding: '20px', borderRadius: '12px', backgroundColor: tema.fundoCard, border: `1px solid ${tema.borda}`, display: 'flex', flexDirection: 'column', gap: '15px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
       <div style={{ height: '24px', width: '30%', backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', borderRadius: '6px' }}></div>
@@ -508,7 +542,6 @@ function App() {
         }
         .animate-ping { animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite; }
 
-        /* Nova animação do Esqueleto */
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: .4; }
@@ -700,7 +733,7 @@ function App() {
           </div>
         )}
 
-        {/* TELA 3: HISTÓRICO COM FILTROS AVANÇADOS */}
+        {/* TELA 3: HISTÓRICO COM FILTROS AVANÇADOS E EXCEL */}
         {abaAtiva === 'historico' && (
           <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '12px', border: `1px solid ${tema.borda}`, boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -753,6 +786,7 @@ function App() {
               </div>
             </div>
 
+            {/* CAIXA DE EXPORTAÇÃO COM O NOVO BOTÃO DE EXCEL */}
             <div style={{ backgroundColor: tema.fundoDestaque, padding: '15px', borderRadius: '10px', border: `1px solid ${tema.borda}`, marginBottom: '30px' }}>
               <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <span style={{ color: tema.texto1, fontSize: '14px', fontWeight: 'bold' }}><FileDown size={16} style={{ marginRight: '5px', verticalAlign: 'middle' }} /> Exportar Dados:</span>
@@ -763,6 +797,9 @@ function App() {
                 <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
                   <button onClick={gerarPDF} style={{ padding: '8px 12px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', transition: '0.2s' }}>PDF</button>
                   <button onClick={gerarTXT} style={{ padding: '8px 12px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', transition: '0.2s' }}>TXT</button>
+                  <button onClick={gerarCSV} style={{ padding: '8px 12px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', transition: '0.2s', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <Sheet size={16} /> Excel (CSV)
+                  </button>
                 </div>
               </div>
             </div>
