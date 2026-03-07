@@ -10,7 +10,6 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '')
   const [atendenteId, setAtendenteId] = useState(localStorage.getItem('atendenteId') || null)
   const [isStaff, setIsStaff] = useState(localStorage.getItem('isStaff') === 'true')
-  
   const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem('temaEscuro') === 'true')
 
   const [username, setUsername] = useState('')
@@ -20,20 +19,18 @@ function App() {
   const [relatorios, setRelatorios] = useState([])
   const [empresa, setEmpresa] = useState('')
   const [funcionario, setFuncionario] = useState('')
-  
   const [categoria, setCategoria] = useState('Outros')
   const [status, setStatus] = useState('Resolvido')
   
-  // === NOVO ESTADO: O SINALIZADOR DE TICKET ===
   const [isTicket, setIsTicket] = useState(false)
-  
+  // === NOVO ESTADO: FILTRO DA ABA DE TICKETS ===
+  const [filtroTicket, setFiltroTicket] = useState('pendentes') 
+
   const dataLocal = new Date();
   const hojePadrao = `${dataLocal.getFullYear()}-${String(dataLocal.getMonth() + 1).padStart(2, '0')}-${String(dataLocal.getDate()).padStart(2, '0')}`;
   
   const [dataAtendimento, setDataAtendimento] = useState(hojePadrao)
-
   const [atendentesSelecionados, setAtendentesSelecionados] = useState([])
-
   const [solitProb, setSolitProb] = useState('')
   const [resolucao, setResolucao] = useState('')
   const [obs, setObs] = useState('')
@@ -152,12 +149,8 @@ function App() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (atendentesSelecionados.length === 0) {
-      alert("Selecione pelo menos um atendente para este relatório!");
-      return;
-    }
+    if (atendentesSelecionados.length === 0) { alert("Selecione pelo menos um atendente para este relatório!"); return; }
 
-    // MANDANDO A NOVA FLAG PRO BACKEND
     const dadosRelatorio = { empresa, funcionario, categoria, status, is_ticket: isTicket, data_atendimento: dataAtendimento, solit_prob: solitProb, resolucao, obs, atendentes: atendentesSelecionados }
     
     if (editandoId) {
@@ -176,9 +169,8 @@ function App() {
     const dataParaEditar = relatorio.data_atendimento || relatorio.criado_em.split('T')[0];
     setDataAtendimento(dataParaEditar);
 
-    setIsTicket(relatorio.is_ticket || false); // Puxa se já era ticket
+    setIsTicket(relatorio.is_ticket || false);
     setAtendentesSelecionados(relatorio.atendentes || []);
-
     setSolitProb(relatorio.solit_prob); setResolucao(relatorio.resolucao); setObs(relatorio.obs || ''); setAbaAtiva('novo');
   }
 
@@ -191,7 +183,7 @@ function App() {
 
   const limparFormulario = () => { 
     setEditandoId(null); setEmpresa(''); setFuncionario(''); setCategoria('Outros'); setStatus('Resolvido'); 
-    setIsTicket(false); // Limpa a flag de ticket
+    setIsTicket(false); 
     setDataAtendimento(hojePadrao); setSolitProb(''); setResolucao(''); setObs(''); 
     setAtendentesSelecionados(atendenteId ? [parseInt(atendenteId)] : []);
   }
@@ -207,15 +199,10 @@ function App() {
     let nome = "Atendimento";
     if (pdfAtendente) { nome += ` ${pdfAtendente.trim()}`; } else { nome += ` Geral`; }
     let dataStr = "";
-    if (pdfDataInicio && pdfDataFim && pdfDataInicio !== pdfDataFim) {
-      dataStr = `${formatarData(pdfDataInicio).replace(/\//g, '-')} a ${formatarData(pdfDataFim).replace(/\//g, '-')}`;
-    } else if (pdfDataInicio) {
-      dataStr = formatarData(pdfDataInicio).replace(/\//g, '-');
-    } else if (pdfDataFim) {
-      dataStr = formatarData(pdfDataFim).replace(/\//g, '-');
-    } else {
-      dataStr = formatarData(hojePadrao).replace(/\//g, '-');
-    }
+    if (pdfDataInicio && pdfDataFim && pdfDataInicio !== pdfDataFim) { dataStr = `${formatarData(pdfDataInicio).replace(/\//g, '-')} a ${formatarData(pdfDataFim).replace(/\//g, '-')}`; } 
+    else if (pdfDataInicio) { dataStr = formatarData(pdfDataInicio).replace(/\//g, '-'); } 
+    else if (pdfDataFim) { dataStr = formatarData(pdfDataFim).replace(/\//g, '-'); } 
+    else { dataStr = formatarData(hojePadrao).replace(/\//g, '-'); }
     return `${nome} - ${dataStr}`;
   }
 
@@ -311,18 +298,10 @@ function App() {
     return acc;
   }, {});
   
-  const dadosGraficoEmpresas = Object.keys(contagemEmpresas)
-    .map(key => ({ nome: key, chamados: contagemEmpresas[key] }))
-    .sort((a, b) => b.chamados - a.chamados)
-    .slice(0, 5);
+  const dadosGraficoEmpresas = Object.keys(contagemEmpresas).map(key => ({ nome: key, chamados: contagemEmpresas[key] })).sort((a, b) => b.chamados - a.chamados).slice(0, 5);
 
   const CORES_STATUS = { 'Resolvido': '#10b981', 'Andamento': '#eab308', 'Aberto': '#ef4444' };
-  const CORES_CATEGORIAS = [
-    '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
-    '#8b5cf6', '#ec4899', '#14b8a6', '#64748b',
-    '#f97316', '#06b6d4', '#84cc16', '#d946ef',
-    '#0ea5e9', '#eab308'
-  ];
+  const CORES_CATEGORIAS = [ '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b', '#f97316', '#06b6d4', '#84cc16', '#d946ef', '#0ea5e9', '#eab308' ];
 
   if (!token) {
     return (
@@ -343,7 +322,7 @@ function App() {
     )
   }
 
-  // === COMPONENTE DO CARTÃO (AGORA COM A ETIQUETA VIP DE TICKET) ===
+  // === COMPONENTE DO CARTÃO ===
   const CartaoRelatorio = ({ relatorio }) => {
     let corStatusBg = '#e2e8f0'; let corStatusTxt = '#475569';
     if(relatorio.status === 'Resolvido') { corStatusBg = '#dcfce7'; corStatusTxt = '#166534'; }
@@ -353,10 +332,10 @@ function App() {
     return (
       <div style={{ border: relatorio.is_ticket && relatorio.status !== 'Resolvido' ? '2px solid #f43f5e' : `1px solid ${tema.borda}`, padding: '20px', borderRadius: '10px', backgroundColor: tema.fundoCard, position: 'relative', transition: '0.3s', marginTop: relatorio.is_ticket ? '10px' : '0' }}>
         
-        {/* A ETIQUETA VIP DO TICKET FLUTUANDO NO TOPO */}
+        {/* === ETIQUETA DO TICKET (AGORA MOSTRA O NÚMERO GERADO PELO DJANGO) === */}
         {relatorio.is_ticket && (
           <span style={{ position: 'absolute', top: '-12px', left: '20px', backgroundColor: relatorio.status === 'Resolvido' ? '#10b981' : '#f43f5e', color: '#fff', padding: '4px 12px', borderRadius: '12px', fontWeight: 'bold', fontSize: '11px', border: `2px solid ${tema.fundoCard}`, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-            🎫 TICKET {relatorio.status === 'Resolvido' ? 'FINALIZADO' : 'EM ABERTO'}
+            🎫 TICKET {relatorio.numero_ticket ? `#${relatorio.numero_ticket}` : ''} - {relatorio.status === 'Resolvido' ? 'FINALIZADO' : 'EM ABERTO'}
           </span>
         )}
 
@@ -396,10 +375,8 @@ function App() {
             
             <button onClick={() => { setAbaAtiva('novo'); limparFormulario(); }} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'novo' ? '#32b8f7' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'novo' ? '#fff' : tema.texto1 }}>Atendimento</button>
             <button onClick={() => setAbaAtiva('historico')} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'historico' ? '#32b8f7' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'historico' ? '#fff' : tema.texto1 }}>Histórico</button>
-            
-            {/* === O NOVO BOTÃO RADAR DE TICKETS === */}
             <button onClick={() => setAbaAtiva('tickets')} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'tickets' ? '#f43f5e' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'tickets' ? '#fff' : tema.texto1, display: 'flex', alignItems: 'center', gap: '5px' }}>
-               🎫 Radar de Tickets
+               🎫 Tickets
             </button>
 
             {isStaff && (
@@ -484,11 +461,10 @@ function App() {
                 </div>
              </div>
 
-             {/* === O CHECKBOX MÁGICO PARA VIRAR TICKET === */}
              <div onClick={() => setIsTicket(!isTicket)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '15px', backgroundColor: isTicket ? (isDarkMode ? '#4c0519' : '#ffe4e6') : tema.inputBg, borderRadius: '6px', border: `2px dashed ${isTicket ? '#f43f5e' : tema.borda}`, cursor: 'pointer', transition: '0.3s' }}>
                 <input type="checkbox" checked={isTicket} readOnly style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
                 <span style={{ color: isTicket ? '#fb7185' : tema.texto1, fontWeight: isTicket ? 'bold' : 'normal', fontSize: '15px' }}>
-                  🎫 Sinalizar como TICKET (Usar para problemas complexos ou que vão demorar)
+                  🎫 Sinalizar como TICKET
                 </span>
              </div>
 
@@ -504,27 +480,45 @@ function App() {
          </div>
         )}
 
-        {/* === TELA 2: RADAR DE TICKETS (A NOVA ABA) === */}
+        {/* === TELA 2: RADAR DE TICKETS (COM O FILTRO) === */}
         {abaAtiva === 'tickets' && (
           <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '10px', border: `1px solid ${tema.borda}` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f43f5e', paddingBottom: '10px', marginBottom: '20px' }}>
-              <h2 style={{ color: tema.texto1, margin: 0 }}>🚨 Radar de Tickets Pendentes</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f43f5e', paddingBottom: '15px', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
+              <h2 style={{ color: tema.texto1, margin: 0 }}>🚨 Tickets</h2>
+              
+              {/* BOTÕES DE FILTRO */}
+              <div style={{ display: 'flex', gap: '10px', backgroundColor: tema.inputBg, padding: '5px', borderRadius: '8px', border: `1px solid ${tema.borda}` }}>
+                <button onClick={() => setFiltroTicket('pendentes')} style={{ padding: '8px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: filtroTicket === 'pendentes' ? '#f43f5e' : 'transparent', color: filtroTicket === 'pendentes' ? '#fff' : tema.texto1, transition: '0.2s' }}>
+                  Abertos / Andamento
+                </button>
+                <button onClick={() => setFiltroTicket('resolvidos')} style={{ padding: '8px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: filtroTicket === 'resolvidos' ? '#10b981' : 'transparent', color: filtroTicket === 'resolvidos' ? '#fff' : tema.texto1, transition: '0.2s' }}>
+                  Resolvidos
+                </button>
+              </div>
             </div>
             
-            {/* Filtra apenas o que é ticket E não está resolvido */}
-            {relatorios.filter(r => r.is_ticket && r.status !== 'Resolvido').length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px', backgroundColor: tema.fundoDestaque, borderRadius: '8px' }}>
-                <span style={{ fontSize: '40px' }}>🎉</span>
-                <h3 style={{ color: tema.texto1, margin: '10px 0' }}>Tudo limpo por aqui!</h3>
-                <p style={{ color: tema.texto2, margin: 0 }}>A equipe de T.I. não tem nenhum ticket pendente no momento.</p>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {relatorios.filter(r => r.is_ticket && r.status !== 'Resolvido').map(relatorio => (
-                  <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />
-                ))}
-              </div>
-            )}
+            {/* LÓGICA PARA EXIBIR BASEADO NO BOTÃO CLICADO */}
+            {(() => {
+              const ticketsParaMostrar = relatorios.filter(r => r.is_ticket && (filtroTicket === 'pendentes' ? r.status !== 'Resolvido' : r.status === 'Resolvido'));
+              
+              if (ticketsParaMostrar.length === 0) {
+                return (
+                  <div style={{ textAlign: 'center', padding: '40px', backgroundColor: tema.fundoDestaque, borderRadius: '8px' }}>
+                    <span style={{ fontSize: '40px' }}>{filtroTicket === 'pendentes' ? '🎉' : '📂'}</span>
+                    <h3 style={{ color: tema.texto1, margin: '10px 0' }}>{filtroTicket === 'pendentes' ? 'Tudo limpo por aqui!' : 'Nenhum ticket finalizado ainda.'}</h3>
+                    <p style={{ color: tema.texto2, margin: 0 }}>{filtroTicket === 'pendentes' ? 'A equipe não tem nenhum ticket aberto no momento.' : 'Tickets finalizados ficarão arquivados aqui.'}</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {ticketsParaMostrar.map(relatorio => (
+                    <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         )}
 
