@@ -319,8 +319,12 @@ function App() {
   };
 
   // Paleta de cores vibrantes para o gráfico de categorias
-  const CORES_CATEGORIAS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b'];
-
+  const CORES_CATEGORIAS = [
+    '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
+    '#8b5cf6', '#ec4899', '#14b8a6', '#64748b',
+    '#f97316', '#06b6d4', '#84cc16', '#d946ef',
+    '#0ea5e9', '#eab308'
+  ];
 
   if (!token) {
     return (
@@ -471,12 +475,17 @@ function App() {
                 <div style={{ flex: 1, minWidth: '200px' }}>
                   <select value={categoria} onChange={(e) => setCategoria(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1 }}>
                     <option value="Hardware / Equipamento">🖥️ Hardware / Equipamento</option>
+                    <option value="Sistema Operacional / Windows">🪟 Sistema Operacional / Windows</option>
                     <option value="Internet / Wi-Fi">🌐 Internet / Wi-Fi</option>
-                    <option value="Rede / Servidor">🖧 Rede Interna / Servidor</option>
+                    <option value="Rede Interna / Servidor">🖧 Rede Interna / Servidor</option>
                     <option value="Sistemas / ERP">⚙️ Sistemas / ERP</option>
-                    <option value="E-mail / Acessos">📧 E-mail / Senhas</option>
+                    <option value="E-mail / Acessos">📧 E-mail / Acessos</option>
                     <option value="Impressora">🖨️ Impressora</option>
                     <option value="Telefonia">📞 Telefonia</option>
+                    <option value="CFTV / Câmeras">📹 CFTV / Câmeras</option>
+                    <option value="Controle de Ponto / Biometria">🕒 Controle de Ponto / Biometria</option>
+                    <option value="Certificados Digitais">🔐 Certificados Digitais</option>
+                    <option value="Backup / Restauração">💾 Backup / Restauração</option>
                     <option value="Dúvida de Usuário">❓ Dúvida de Usuário</option>
                     <option value="Outros">🔧 Outros</option>
                   </select>
