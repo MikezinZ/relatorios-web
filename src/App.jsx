@@ -4,7 +4,6 @@ import { jwtDecode } from 'jwt-decode'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts'
-// === AS NOVAS IMPORTAÇÕES DE DESIGN AQUI ===
 import { Toaster, toast } from 'sonner'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 import logoImg from './assets/logo_Globalnet.png'
@@ -52,7 +51,6 @@ function App() {
   const [novoIsStaff, setNovoIsStaff] = useState(false)
   const [novoIsActive, setNovoIsActive] = useState(true)
 
-  // === GANCHO DA ANIMAÇÃO ===
   const [animationParent] = useAutoAnimate()
 
   useEffect(() => {
@@ -70,7 +68,6 @@ function App() {
     graficoTexto: isDarkMode ? '#cbd5e1' : '#475569'
   }
 
-  // Substituímos os alerts por toasts do Sonner
   const handleLogin = (e) => {
     e.preventDefault()
     const toastId = toast.loading('Acessando o sistema...')
@@ -137,13 +134,23 @@ function App() {
 
   const iniciarEdicaoUsuario = (user) => { setEditandoUsuarioId(user.id); setNovoUsername(user.username); setNovaSenha(''); setNovoIsStaff(user.is_staff); setNovoIsActive(user.is_active); }
 
+  // === NOVO SISTEMA DE EXCLUSÃO DE USUÁRIO COM TOAST INTERATIVO ===
   const apagarUsuario = (id) => {
     if (id === parseInt(atendenteId)) { toast.warning("Você não pode apagar a si mesmo!"); return; }
-    if (window.confirm("⚠️ ATENÇÃO: Deseja APAGAR a conta e todos os relatórios vinculados a ela?")) {
-      axios.delete(`https://api-ti-relatorios.onrender.com/api/usuarios/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(() => { toast.success("Conta apagada."); buscarUsuarios(); })
-      .catch(error => toast.error("Erro ao apagar usuário."))
-    }
+    
+    toast('⚠️ Atenção: Apagar Conta', {
+      description: 'Isso apagará a conta e TODOS os relatórios vinculados a ela. Tem certeza?',
+      action: {
+        label: 'Sim, Apagar Tudo',
+        onClick: () => {
+          axios.delete(`https://api-ti-relatorios.onrender.com/api/usuarios/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
+          .then(() => { toast.success("Conta e relatórios apagados."); buscarUsuarios(); })
+          .catch(error => toast.error("Erro ao apagar usuário."))
+        }
+      },
+      cancel: { label: 'Cancelar' },
+      duration: 8000, // Fica 8 segundos na tela pra pessoa decidir
+    });
   }
 
   const limparFormularioUsuario = () => { setEditandoUsuarioId(null); setNovoUsername(''); setNovaSenha(''); setNovoIsStaff(false); setNovoIsActive(true); }
@@ -186,12 +193,21 @@ function App() {
     setSolitProb(relatorio.solit_prob); setResolucao(relatorio.resolucao); setObs(relatorio.obs || ''); setAbaAtiva('novo');
   }
 
+  // === NOVO SISTEMA DE EXCLUSÃO DE RELATÓRIO COM TOAST INTERATIVO ===
   const apagarRelatorio = (id) => {
-    if (window.confirm("Apagar este relatório?")) {
-      axios.delete(`https://api-ti-relatorios.onrender.com/api/relatorios/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(() => { setRelatorios(relatorios.filter(r => r.id !== id)); toast.success("Relatório excluído."); })
-      .catch(() => toast.error("Erro ao apagar o relatório."))
-    }
+    toast('🗑️ Excluir Relatório', {
+      description: 'Tem certeza que deseja apagar este atendimento definitivamente?',
+      action: {
+        label: 'Sim, Excluir',
+        onClick: () => {
+          axios.delete(`https://api-ti-relatorios.onrender.com/api/relatorios/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
+          .then(() => { setRelatorios(relatorios.filter(r => r.id !== id)); toast.success("Relatório excluído."); })
+          .catch(() => toast.error("Erro ao apagar o relatório."))
+        }
+      },
+      cancel: { label: 'Cancelar' },
+      duration: 8000, // Fica 8 segundos na tela pra pessoa decidir
+    });
   }
 
   const limparFormulario = () => { 
@@ -304,7 +320,10 @@ function App() {
   if (!token) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: tema.fundoMain, display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'Arial, sans-serif', transition: '0.3s' }}>
-        <Toaster theme={isDarkMode ? 'dark' : 'light'} richColors position="bottom-right" />
+        
+        {/* === TOASTER CONFIGURADO (TOPO DA TELA) NA TELA DE LOGIN === */}
+        <Toaster theme={isDarkMode ? 'dark' : 'light'} richColors position="top-center" duration={5000} expand={true} />
+        
         <style>{`body { margin: 0; padding: 0; box-sizing: border-box; background-color: ${tema.fundoMain}; }`}</style>
         <div style={{ backgroundColor: tema.fundoCard, padding: '40px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px' }}>
           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
@@ -361,12 +380,13 @@ function App() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: tema.fundoMain, padding: '20px', fontFamily: 'Arial, sans-serif', transition: 'background-color 0.3s' }}>
       
-      <Toaster theme={isDarkMode ? 'dark' : 'light'} richColors position="bottom-right" />
+      {/* === TOASTER CONFIGURADO (TOPO DA TELA) NA TELA PRINCIPAL === */}
+      <Toaster theme={isDarkMode ? 'dark' : 'light'} richColors position="top-center" duration={5000} expand={true} />
+      
       <style>{`body { margin: 0; padding: 0; box-sizing: border-box; background-color: ${tema.fundoMain}; }`}</style>
       
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         
-        {/* MENU SUPERIOR GLASSMORPHISM */}
         <div style={{ 
           position: 'sticky', top: '10px', zIndex: 100,
           display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', 
@@ -397,7 +417,6 @@ function App() {
           </div>
         </div>
 
-        {/* TELA 1: NOVO ATENDIMENTO */}
         {abaAtiva === 'novo' && (
            <div style={{ backgroundColor: editandoId ? (isDarkMode ? '#b45309' : '#d97706') : (isDarkMode ? '#1e293b' : '#ffffff'), padding: '30px', borderRadius: '12px', transition: '0.3s', border: `1px solid ${tema.borda}`, boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
            <h2 style={{ color: editandoId ? '#fff' : tema.texto1, marginTop: '0', marginBottom: '20px' }}>{editandoId ? '✏️ Editando Relatório' : 'Novo Atendimento'}</h2>
@@ -488,7 +507,6 @@ function App() {
          </div>
         )}
 
-        {/* === TELA 2: RADAR DE TICKETS === */}
         {abaAtiva === 'tickets' && (
           <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '12px', border: `1px solid ${tema.borda}`, boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f43f5e', paddingBottom: '15px', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
@@ -504,7 +522,6 @@ function App() {
               </div>
             </div>
             
-            {/* O AUTO-ANIMATE */}
             <div ref={animationParent} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {(() => {
                 const ticketsParaMostrar = relatorios.filter(r => r.is_ticket && (filtroTicket === 'pendentes' ? r.status !== 'Resolvido' : r.status === 'Resolvido'));
@@ -527,7 +544,6 @@ function App() {
           </div>
         )}
 
-        {/* TELA 3: HISTÓRICO GERAL */}
         {abaAtiva === 'historico' && (
           <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '12px', border: `1px solid ${tema.borda}`, boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}><h2 style={{ color: tema.texto1, margin: 0 }}>Histórico Completo</h2></div>
@@ -556,7 +572,6 @@ function App() {
               </div>
             </div>
             
-            {/* O AUTO-ANIMATE APLICADO NO HISTÓRICO TAMBÉM */}
             <div ref={animationParent}>
               {isBuscandoDataExata ? (
                 <>
@@ -581,7 +596,6 @@ function App() {
           </div>
         )}
 
-        {/* TELA 4: ADMINISTRAÇÃO */}
         {abaAtiva === 'gestao' && (
           <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '12px', border: `1px solid ${tema.borda}`, boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
             <h2 style={{ color: tema.texto1, margin: '0 0 20px 0' }}>⚙️ Dashboard de Gestão</h2>
@@ -681,7 +695,6 @@ function App() {
 
               <div style={{ flex: 1, minWidth: '250px', backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '8px', border: `1px solid ${tema.borda}` }}>
                 <h3 style={{ margin: '0 0 15px 0', color: tema.texto1 }}>📋 Equipe Cadastrada</h3>
-                {/* O AUTO-ANIMATE APLICADO NA LISTA DE USUÁRIOS */}
                 <div ref={animationParent} style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '300px', overflowY: 'auto' }}>
                   {usuarios.map(user => (
                     <div key={user.id} style={{ padding: '12px', backgroundColor: tema.fundoCard, border: `1px solid ${tema.borda}`, borderRadius: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
