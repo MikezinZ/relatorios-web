@@ -376,7 +376,7 @@ function App() {
             <button onClick={() => { setAbaAtiva('novo'); limparFormulario(); }} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'novo' ? '#32b8f7' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'novo' ? '#fff' : tema.texto1 }}>Atendimento</button>
             <button onClick={() => setAbaAtiva('historico')} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'historico' ? '#32b8f7' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'historico' ? '#fff' : tema.texto1 }}>Histórico</button>
             <button onClick={() => setAbaAtiva('tickets')} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'tickets' ? '#f43f5e' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'tickets' ? '#fff' : tema.texto1, display: 'flex', alignItems: 'center', gap: '5px' }}>
-               🎫 Tickets
+              Tickets
             </button>
 
             {isStaff && (
