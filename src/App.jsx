@@ -24,6 +24,9 @@ function App() {
   const [categoria, setCategoria] = useState('Outros')
   const [status, setStatus] = useState('Resolvido')
   
+  // === NOVO ESTADO: O SINALIZADOR DE TICKET ===
+  const [isTicket, setIsTicket] = useState(false)
+  
   const dataLocal = new Date();
   const hojePadrao = `${dataLocal.getFullYear()}-${String(dataLocal.getMonth() + 1).padStart(2, '0')}-${String(dataLocal.getDate()).padStart(2, '0')}`;
   
@@ -154,7 +157,8 @@ function App() {
       return;
     }
 
-    const dadosRelatorio = { empresa, funcionario, categoria, status, data_atendimento: dataAtendimento, solit_prob: solitProb, resolucao, obs, atendentes: atendentesSelecionados }
+    // MANDANDO A NOVA FLAG PRO BACKEND
+    const dadosRelatorio = { empresa, funcionario, categoria, status, is_ticket: isTicket, data_atendimento: dataAtendimento, solit_prob: solitProb, resolucao, obs, atendentes: atendentesSelecionados }
     
     if (editandoId) {
       axios.put(`https://api-ti-relatorios.onrender.com/api/relatorios/${editandoId}/`, dadosRelatorio, { headers: { Authorization: `Bearer ${token}` } })
@@ -172,6 +176,7 @@ function App() {
     const dataParaEditar = relatorio.data_atendimento || relatorio.criado_em.split('T')[0];
     setDataAtendimento(dataParaEditar);
 
+    setIsTicket(relatorio.is_ticket || false); // Puxa se já era ticket
     setAtendentesSelecionados(relatorio.atendentes || []);
 
     setSolitProb(relatorio.solit_prob); setResolucao(relatorio.resolucao); setObs(relatorio.obs || ''); setAbaAtiva('novo');
@@ -186,6 +191,7 @@ function App() {
 
   const limparFormulario = () => { 
     setEditandoId(null); setEmpresa(''); setFuncionario(''); setCategoria('Outros'); setStatus('Resolvido'); 
+    setIsTicket(false); // Limpa a flag de ticket
     setDataAtendimento(hojePadrao); setSolitProb(''); setResolucao(''); setObs(''); 
     setAtendentesSelecionados(atendenteId ? [parseInt(atendenteId)] : []);
   }
@@ -196,6 +202,7 @@ function App() {
     return `${dia}/${mes}/${ano}`;
   }
 
+  // Lógica de Filtros e Exportação
   const gerarNomeArquivo = () => {
     let nome = "Atendimento";
     if (pdfAtendente) { nome += ` ${pdfAtendente.trim()}`; } else { nome += ` Geral`; }
@@ -283,8 +290,7 @@ function App() {
   const relatoriosHoje = !isBuscandoDataExata ? relatoriosParaMostrar.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) === hojePadrao) : [];
   const relatoriosAntigos = !isBuscandoDataExata ? relatoriosParaMostrar.filter(r => (r.data_atendimento || r.criado_em.split('T')[0]) !== hojePadrao) : [];
 
-  // === LÓGICA DE DADOS PARA OS GRÁFICOS DO DASHBOARD ===
-  // 1. Contagem por Categoria
+  // LÓGICA DE DADOS PARA OS GRÁFICOS DO DASHBOARD
   const contagemCategorias = relatorios.reduce((acc, rel) => {
     const cat = rel.categoria || 'Outros';
     acc[cat] = (acc[cat] || 0) + 1;
@@ -292,7 +298,6 @@ function App() {
   }, {});
   const dadosGraficoCategoria = Object.keys(contagemCategorias).map(key => ({ nome: key, total: contagemCategorias[key] }));
 
-  // 2. Contagem por Status
   const contagemStatus = relatorios.reduce((acc, rel) => {
     const stat = rel.status || 'Resolvido';
     acc[stat] = (acc[stat] || 0) + 1;
@@ -300,7 +305,6 @@ function App() {
   }, {});
   const dadosGraficoStatus = Object.keys(contagemStatus).map(key => ({ name: key, value: contagemStatus[key] }));
   
-  // 3. Contagem por Empresa (TOP 5 que dão mais trabalho)
   const contagemEmpresas = relatorios.reduce((acc, rel) => {
     const emp = rel.empresa || 'Sem Nome';
     acc[emp] = (acc[emp] || 0) + 1;
@@ -312,13 +316,7 @@ function App() {
     .sort((a, b) => b.chamados - a.chamados)
     .slice(0, 5);
 
-  const CORES_STATUS = {
-    'Resolvido': '#10b981',
-    'Andamento': '#eab308',
-    'Aberto': '#ef4444'
-  };
-
-  // Paleta de cores vibrantes para o gráfico de categorias
+  const CORES_STATUS = { 'Resolvido': '#10b981', 'Andamento': '#eab308', 'Aberto': '#ef4444' };
   const CORES_CATEGORIAS = [
     '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
     '#8b5cf6', '#ec4899', '#14b8a6', '#64748b',
@@ -331,20 +329,9 @@ function App() {
       <div style={{ minHeight: '100vh', backgroundColor: tema.fundoMain, display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'Arial, sans-serif', transition: '0.3s' }}>
         <style>{`body { margin: 0; padding: 0; box-sizing: border-box; background-color: ${tema.fundoMain}; }`}</style>
         <div style={{ backgroundColor: tema.fundoCard, padding: '40px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px' }}>
-          
           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-            <img 
-              src={logoImg} 
-              alt="Logo Globalnet" 
-              style={{ 
-                maxWidth: '180px', 
-                maxHeight: '80px',
-                filter: isDarkMode ? 'brightness(0) invert(1)' : 'none',
-                transition: 'filter 0.3s'
-              }} 
-            />
+            <img src={logoImg} alt="Logo Globalnet" style={{ maxWidth: '180px', maxHeight: '80px', filter: isDarkMode ? 'brightness(0) invert(1)' : 'none', transition: 'filter 0.3s' }} />
           </div>
-
           <h2 style={{ textAlign: 'center', color: tema.texto1, marginBottom: '30px', marginTop: 0 }}>Login</h2>
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <input type="text" placeholder="Usuário" required value={username} onChange={(e) => setUsername(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, boxSizing: 'border-box' }} />
@@ -356,6 +343,7 @@ function App() {
     )
   }
 
+  // === COMPONENTE DO CARTÃO (AGORA COM A ETIQUETA VIP DE TICKET) ===
   const CartaoRelatorio = ({ relatorio }) => {
     let corStatusBg = '#e2e8f0'; let corStatusTxt = '#475569';
     if(relatorio.status === 'Resolvido') { corStatusBg = '#dcfce7'; corStatusTxt = '#166534'; }
@@ -363,13 +351,21 @@ function App() {
     if(relatorio.status === 'Aberto') { corStatusBg = '#fee2e2'; corStatusTxt = '#991b1b'; }
 
     return (
-      <div style={{ border: `1px solid ${tema.borda}`, padding: '20px', borderRadius: '10px', backgroundColor: tema.fundoCard, position: 'relative', transition: '0.3s' }}>
+      <div style={{ border: relatorio.is_ticket && relatorio.status !== 'Resolvido' ? '2px solid #f43f5e' : `1px solid ${tema.borda}`, padding: '20px', borderRadius: '10px', backgroundColor: tema.fundoCard, position: 'relative', transition: '0.3s', marginTop: relatorio.is_ticket ? '10px' : '0' }}>
+        
+        {/* A ETIQUETA VIP DO TICKET FLUTUANDO NO TOPO */}
+        {relatorio.is_ticket && (
+          <span style={{ position: 'absolute', top: '-12px', left: '20px', backgroundColor: relatorio.status === 'Resolvido' ? '#10b981' : '#f43f5e', color: '#fff', padding: '4px 12px', borderRadius: '12px', fontWeight: 'bold', fontSize: '11px', border: `2px solid ${tema.fundoCard}`, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+            🎫 TICKET {relatorio.status === 'Resolvido' ? 'FINALIZADO' : 'EM ABERTO'}
+          </span>
+        )}
+
         <div style={{ position: 'absolute', top: '15px', right: '15px', display: 'flex', gap: '8px' }}>
           <button onClick={() => iniciarEdicao(relatorio)} style={{ backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', color: tema.texto1, border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }} title="Editar">✏️</button>
           <button onClick={() => apagarRelatorio(relatorio.id)} style={{ backgroundColor: '#fed7d7', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }} title="Excluir">🗑️</button>
         </div>
         
-        <h3 style={{ margin: '0 0 10px 0', color: '#32b8f7', fontSize: '18px', paddingRight: '70px' }}>{relatorio.empresa} {relatorio.funcionario && <span style={{ color: tema.texto2, fontSize: '14px' }}>- {relatorio.funcionario}</span>}</h3>
+        <h3 style={{ margin: '0 0 10px 0', color: '#32b8f7', fontSize: '18px', paddingRight: '70px', paddingTop: relatorio.is_ticket ? '5px' : '0' }}>{relatorio.empresa} {relatorio.funcionario && <span style={{ color: tema.texto2, fontSize: '14px' }}>- {relatorio.funcionario}</span>}</h3>
         
         <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '12px', backgroundColor: isDarkMode ? '#334155' : '#f1f5f9', color: tema.texto2, padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>📂 {relatorio.categoria || 'Outros'}</span>
@@ -381,7 +377,7 @@ function App() {
         <p style={{ margin: '5px 0', fontSize: '14px', color: tema.texto1 }}><strong>RES:</strong> {relatorio.resolucao}</p>
         {relatorio.obs && <p style={{ margin: '5px 0', fontSize: '14px', color: tema.texto1 }}><strong>OBS:</strong> {relatorio.obs}</p>}
         
-        <div style={{ marginTop: '15px', paddingTop: '10px', borderTop: `1px solid ${tema.borda}`, fontSize: '0.8em', color: tema.texto2 }}>Equipe: <span style={{fontWeight: 'bold'}}>{relatorio.atendente_nome}</span> | Lançado no sistema em: {new Date(relatorio.criado_em).toLocaleString('pt-BR')}</div>
+        <div style={{ marginTop: '15px', paddingTop: '10px', borderTop: `1px solid ${tema.borda}`, fontSize: '0.8em', color: tema.texto2 }}>Equipe: <span style={{fontWeight: 'bold'}}>{relatorio.atendente_nome}</span> | Lançado em: {new Date(relatorio.criado_em).toLocaleString('pt-BR')}</div>
       </div>
     )
   }
@@ -393,23 +389,19 @@ function App() {
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', backgroundColor: tema.fundoCard, padding: '15px 20px', borderRadius: '10px', border: `1px solid ${tema.borda}` }}>
           <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
-            
             <div style={{ display: 'flex', alignItems: 'center', marginRight: '10px' }}>
-              <img 
-                src={logoImg} 
-                alt="Logo Globalnet" 
-                style={{ 
-                  height: '40px', 
-                  marginRight: '15px',
-                  filter: isDarkMode ? 'brightness(0) invert(1)' : 'none',
-                  transition: 'filter 0.3s'
-                }} 
-              />
-              <h2 style={{ margin: 0, color: tema.texto1, display: 'none' }}>Suporte de T.i.</h2> 
+              <img src={logoImg} alt="Logo Globalnet" style={{ height: '40px', marginRight: '15px', filter: isDarkMode ? 'brightness(0) invert(1)' : 'none', transition: 'filter 0.3s' }} />
+              <h2 style={{ margin: 0, color: tema.texto1, display: 'none' }}>Suporte</h2> 
             </div>
             
             <button onClick={() => { setAbaAtiva('novo'); limparFormulario(); }} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'novo' ? '#32b8f7' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'novo' ? '#fff' : tema.texto1 }}>Atendimento</button>
             <button onClick={() => setAbaAtiva('historico')} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'historico' ? '#32b8f7' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'historico' ? '#fff' : tema.texto1 }}>Histórico</button>
+            
+            {/* === O NOVO BOTÃO RADAR DE TICKETS === */}
+            <button onClick={() => setAbaAtiva('tickets')} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'tickets' ? '#f43f5e' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'tickets' ? '#fff' : tema.texto1, display: 'flex', alignItems: 'center', gap: '5px' }}>
+               🎫 Radar de Tickets
+            </button>
+
             {isStaff && (
               <button onClick={() => { setAbaAtiva('gestao'); limparFormularioUsuario(); }} style={{ padding: '10px 15px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: abaAtiva === 'gestao' ? '#10b981' : (isDarkMode ? '#334155' : '#e2e8f0'), color: abaAtiva === 'gestao' ? '#fff' : tema.texto1 }}>Administração</button>
             )}
@@ -420,6 +412,7 @@ function App() {
           </div>
         </div>
 
+        {/* TELA 1: NOVO ATENDIMENTO */}
         {abaAtiva === 'novo' && (
            <div style={{ backgroundColor: editandoId ? (isDarkMode ? '#b45309' : '#d97706') : (isDarkMode ? '#1e293b' : '#475569'), padding: '30px', borderRadius: '10px', transition: '0.3s', border: `1px solid ${tema.borda}` }}>
            <h2 style={{ color: '#fff', marginTop: '0', marginBottom: '20px' }}>{editandoId ? '✏️ Editando Relatório' : 'Novo Atendimento'}</h2>
@@ -427,31 +420,15 @@ function App() {
              
              <div style={{ backgroundColor: tema.inputBg, padding: '15px', borderRadius: '6px', border: `1px solid ${tema.borda}` }}>
                 <label style={{ display: 'block', color: tema.texto2, fontWeight: 'bold', marginBottom: '12px', fontSize: '14px' }}>
-                  👥 Equipe no atendimento (Clique para marcar/desmarcar):
+                  👥 Equipe no atendimento:
                 </label>
-
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                   {usuarios.map(user => {
                     const isSelected = atendentesSelecionados.includes(user.id);
                     return (
                       <button
-                        key={user.id}
-                        type="button" 
-                        onClick={() => handleToggleAtendente(user.id)}
-                        style={{
-                          padding: '8px 14px',
-                          borderRadius: '20px',
-                          border: isSelected ? 'none' : `1px solid ${tema.borda}`,
-                          backgroundColor: isSelected ? '#32b8f7' : (isDarkMode ? '#1e293b' : '#f1f5f9'),
-                          color: isSelected ? '#fff' : tema.texto1,
-                          cursor: 'pointer',
-                          fontWeight: isSelected ? 'bold' : 'normal',
-                          transition: 'all 0.2s',
-                          fontSize: '14px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '5px'
-                        }}
+                        key={user.id} type="button" onClick={() => handleToggleAtendente(user.id)}
+                        style={{ padding: '8px 14px', borderRadius: '20px', border: isSelected ? 'none' : `1px solid ${tema.borda}`, backgroundColor: isSelected ? '#32b8f7' : (isDarkMode ? '#1e293b' : '#f1f5f9'), color: isSelected ? '#fff' : tema.texto1, cursor: 'pointer', fontWeight: isSelected ? 'bold' : 'normal', transition: 'all 0.2s', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '5px' }}
                       >
                         {isSelected ? '✓' : ''} {user.username}
                       </button>
@@ -474,34 +451,23 @@ function App() {
              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: '200px' }}>
                   <select value={categoria} onChange={(e) => setCategoria(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1 }}>
-  {/* A BAZUCA PESADA */}
                     <option value="Hardware / Equipamento">🖥️ Hardware / Equipamento</option>
-                    <option value="Sistema Operacional / Windows">💾 Sistema Operacional / Windows</option>
-                    <option value="Rede Interna / Servidor">📡 Rede Interna / Servidor</option>
+                    <option value="Sistema Operacional / Windows">🪟 Sistema Operacional / Windows</option>
+                    <option value="Rede Interna / Servidor">🖧 Rede Interna / Servidor</option>
                     <option value="Internet / Wi-Fi">🌐 Internet / Wi-Fi</option>
-                    
-                    {/* SISTEMAS E SOFTWARES */}
                     <option value="Sistemas / ERP">⚙️ Sistemas / ERP</option>
                     <option value="Pacote Office / Softwares">📝 Pacote Office / Softwares</option>
-                    
-                    {/* COMUNICAÇÃO E ACESSOS */}
                     <option value="E-mail / Acessos">📧 E-mail / Acessos</option>
                     <option value="Acessos / Permissões / VPN">🔑 Acessos / Permissões / VPN</option>
                     <option value="Telefonia">📞 Telefonia</option>
                     <option value="Dispositivos Móveis / Celular">📱 Dispositivos Móveis / Celular</option>
-                    
-                    {/* SEGURANÇA E OUTROS EQUIPAMENTOS */}
                     <option value="Segurança / Antivírus">🛡️ Segurança / Antivírus</option>
                     <option value="Backup / Restauração">💾 Backup / Restauração</option>
                     <option value="Certificados Digitais">🔐 Certificados Digitais</option>
                     <option value="Controle de Ponto / Biometria">🕒 Controle de Ponto / Biometria</option>
                     <option value="CFTV / Câmeras">📹 CFTV / Câmeras</option>
-                    
-                    {/* PERIFÉRICOS E IMPRESSÃO */}
                     <option value="Impressora">🖨️ Impressora</option>
                     <option value="Periféricos (Mouse/Teclado/Fone)">🔌 Periféricos (Mouse/Teclado/Fone)</option>
-                    
-                    {/* GERAIS */}
                     <option value="Dúvida de Usuário">❓ Dúvida de Usuário</option>
                     <option value="Outros">🔧 Outros</option>
                   </select>
@@ -513,10 +479,17 @@ function App() {
                     <option value="Aberto">🔴 Aberto (Pendente)</option>
                   </select>
                 </div>
-                
                 <div style={{ flex: 1, minWidth: '150px' }}>
                   <input type="date" required value={dataAtendimento} onChange={(e) => setDataAtendimento(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1 }} title="Data em que o serviço foi realizado" />
                 </div>
+             </div>
+
+             {/* === O CHECKBOX MÁGICO PARA VIRAR TICKET === */}
+             <div onClick={() => setIsTicket(!isTicket)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '15px', backgroundColor: isTicket ? (isDarkMode ? '#4c0519' : '#ffe4e6') : tema.inputBg, borderRadius: '6px', border: `2px dashed ${isTicket ? '#f43f5e' : tema.borda}`, cursor: 'pointer', transition: '0.3s' }}>
+                <input type="checkbox" checked={isTicket} readOnly style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                <span style={{ color: isTicket ? '#fb7185' : tema.texto1, fontWeight: isTicket ? 'bold' : 'normal', fontSize: '15px' }}>
+                  🎫 Sinalizar como TICKET (Usar para problemas complexos ou que vão demorar)
+                </span>
              </div>
 
              <textarea placeholder="SOLIT/PROB" required value={solitProb} onChange={(e) => setSolitProb(e.target.value)} style={{ padding: '12px', borderRadius: '6px', border: 'none', minHeight: '80px', fontSize: '15px', resize: 'vertical', backgroundColor: tema.inputBg, color: tema.texto1 }} />
@@ -531,9 +504,34 @@ function App() {
          </div>
         )}
 
+        {/* === TELA 2: RADAR DE TICKETS (A NOVA ABA) === */}
+        {abaAtiva === 'tickets' && (
+          <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '10px', border: `1px solid ${tema.borda}` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f43f5e', paddingBottom: '10px', marginBottom: '20px' }}>
+              <h2 style={{ color: tema.texto1, margin: 0 }}>🚨 Radar de Tickets Pendentes</h2>
+            </div>
+            
+            {/* Filtra apenas o que é ticket E não está resolvido */}
+            {relatorios.filter(r => r.is_ticket && r.status !== 'Resolvido').length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px', backgroundColor: tema.fundoDestaque, borderRadius: '8px' }}>
+                <span style={{ fontSize: '40px' }}>🎉</span>
+                <h3 style={{ color: tema.texto1, margin: '10px 0' }}>Tudo limpo por aqui!</h3>
+                <p style={{ color: tema.texto2, margin: 0 }}>A equipe de T.I. não tem nenhum ticket pendente no momento.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {relatorios.filter(r => r.is_ticket && r.status !== 'Resolvido').map(relatorio => (
+                  <CartaoRelatorio key={relatorio.id} relatorio={relatorio} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TELA 3: HISTÓRICO GERAL */}
         {abaAtiva === 'historico' && (
           <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '10px', border: `1px solid ${tema.borda}` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}><h2 style={{ color: tema.texto1, margin: 0 }}>Histórico</h2></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}><h2 style={{ color: tema.texto1, margin: 0 }}>Histórico Completo</h2></div>
             
             <div style={{ backgroundColor: tema.fundoDestaque, padding: '15px', borderRadius: '8px', border: `1px solid ${tema.borda}`, marginBottom: '25px' }}>
               <h4 style={{ margin: '0 0 10px 0', color: tema.texto1 }}>📄 Exportar Relatórios</h4>
@@ -581,11 +579,11 @@ function App() {
           </div>
         )}
 
+        {/* TELA 4: ADMINISTRAÇÃO */}
         {abaAtiva === 'gestao' && (
           <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '10px', border: `1px solid ${tema.borda}` }}>
             <h2 style={{ color: tema.texto1, margin: '0 0 20px 0' }}>⚙️ Dashboard de Gestão</h2>
             
-            {/* === CARDS DE RESUMO === */}
             <div style={{ display: 'flex', gap: '20px', marginBottom: '30px', flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: '150px', backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '8px', borderLeft: '5px solid #3b82f6' }}>
                 <h4 style={{ margin: '0 0 10px 0', color: tema.texto2 }}>Total Atendimentos</h4>
@@ -601,10 +599,7 @@ function App() {
               </div>
             </div>
 
-            {/* === GRÁFICOS RECHARTS === */}
             <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginBottom: '40px' }}>
-              
-              {/* Gráfico 1: Status dos Atendimentos (Pizza) */}
               <div style={{ flex: 1, minWidth: '250px', backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '8px', border: `1px solid ${tema.borda}` }}>
                 <h3 style={{ margin: '0 0 20px 0', color: tema.texto1, textAlign: 'center', fontSize: '16px' }}>📊 Status dos Chamados</h3>
                 {relatorios.length > 0 ? (
@@ -622,7 +617,6 @@ function App() {
                 ) : <p style={{ textAlign: 'center', color: tema.texto2 }}>Sem dados suficientes.</p>}
               </div>
 
-              {/* Gráfico 2: Atendimentos por Categoria (Barras Verticais) */}
               <div style={{ flex: 1, minWidth: '250px', backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '8px', border: `1px solid ${tema.borda}` }}>
                 <h3 style={{ margin: '0 0 20px 0', color: tema.texto1, textAlign: 'center', fontSize: '16px' }}>📈 Chamados por Categoria</h3>
                 {relatorios.length > 0 ? (
@@ -642,7 +636,6 @@ function App() {
                 ) : <p style={{ textAlign: 'center', color: tema.texto2 }}>Sem dados suficientes.</p>}
               </div>
 
-              {/* Gráfico 3: Clientes Que Mais Dão Trabalho (Barras Horizontais) */}
               <div style={{ flex: 1, minWidth: '350px', backgroundColor: tema.fundoDestaque, padding: '20px', borderRadius: '8px', border: `1px solid ${tema.borda}` }}>
                 <h3 style={{ margin: '0 0 20px 0', color: tema.texto1, textAlign: 'center', fontSize: '16px' }}>🏆 Top 5 Clientes Ofensores</h3>
                 {relatorios.length > 0 && dadosGraficoEmpresas.length > 0 ? (
@@ -657,10 +650,8 @@ function App() {
                   </ResponsiveContainer>
                 ) : <p style={{ textAlign: 'center', color: tema.texto2 }}>Sem dados suficientes.</p>}
               </div>
-
             </div>
 
-            {/* === GESTÃO DE USUÁRIOS E EQUIPE === */}
             <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: '250px', backgroundColor: editandoUsuarioId ? (isDarkMode ? '#713f12' : '#fef3c7') : tema.fundoDestaque, padding: '20px', borderRadius: '8px', border: `1px solid ${tema.borda}`, transition: '0.3s' }}>
                 <h3 style={{ margin: '0 0 15px 0', color: tema.texto1 }}>{editandoUsuarioId ? '✏️ Editando Atendente' : '👤 Novo Atendente'}</h3>
@@ -716,4 +707,3 @@ function App() {
 }
 
 export default App
-//mg 0.0
