@@ -339,7 +339,7 @@ function App() {
 
   return (
     <div className="main-wrapper" style={{ minHeight: '100vh', backgroundColor: tema.fundoMain, padding: '20px', transition: 'background-color 0.3s' }}>
-      <Toaster theme={isDarkMode ? 'dark' : 'light'} richColors position="top-center" duration={5000} expand={true} />
+      <Toaster theme={isDarkMode ? 'dark' : 'light'} richColors position="top-center" offset="80px" duration={5000} expand={true} />
       
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
