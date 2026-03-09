@@ -332,14 +332,13 @@ function App() {
   const CORES_STATUS = { 'Resolvido': '#10b981', 'Andamento': '#eab308', 'Aberto': '#ef4444' };
   const CORES_CATEGORIAS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b', '#f97316', '#06b6d4', '#84cc16', '#d946ef', '#0ea5e9', '#eab308'];
 
-
   // ================= TELA RENDERIZADA =================
   if (!token) {
     return <Login tema={tema} isDarkMode={isDarkMode} handleLogin={handleLogin} username={username} setUsername={setUsername} password={password} setPassword={setPassword} />
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: tema.fundoMain, padding: '20px', transition: 'background-color 0.3s' }}>
+    <div className="main-wrapper" style={{ minHeight: '100vh', backgroundColor: tema.fundoMain, padding: '20px', transition: 'background-color 0.3s' }}>
       <Toaster theme={isDarkMode ? 'dark' : 'light'} richColors position="top-center" duration={5000} expand={true} />
       
       <style>{`
@@ -355,6 +354,29 @@ function App() {
         .animate-ping { animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
         .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+        /* ========================================= */
+        /* === REGRAS DE RESPONSIVIDADE (MOBILE) === */
+        /* ========================================= */
+        @media (max-width: 768px) {
+          /* Esconde os textos do menu, deixa só ícones */
+          .hide-on-mobile { display: none !important; }
+          
+          /* Reduz a margem da tela toda para ganhar espaço */
+          .main-wrapper { padding: 10px !important; }
+          
+          /* Ajusta o menu superior para caber na tela pequena */
+          .menu-container { 
+            padding: 10px !important; 
+            border-radius: 8px !important;
+          }
+          
+          /* Diminui a logo para sobrar espaço para os botões */
+          .logo-mobile { height: 28px !important; margin-right: 5px !important; }
+          
+          /* Ajusta os botões do menu para ficarem como botões de app */
+          .menu-container button { padding: 10px !important; }
+        }
       `}</style>
 
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
