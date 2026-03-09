@@ -5,6 +5,19 @@ import logoImg from '../assets/logo_Globalnet.png';
 const Login = ({ tema, isDarkMode, handleLogin, username, setUsername, password, setPassword }) => {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: tema.fundoMain, display: 'flex', justifyContent: 'center', alignItems: 'center', transition: '0.3s' }}>
+      
+      {/* === AQUI ESTÁ A CORREÇÃO: CSS GLOBAL (Tira a margem branca e aplica a fonte) === */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { margin: 0; padding: 0; box-sizing: border-box; background-color: ${tema.fundoMain}; font-family: 'Inter', sans-serif; }
+        * { font-family: 'Inter', sans-serif; }
+        input:focus {
+          outline: none !important;
+          border-color: #32b8f7 !important;
+          box-shadow: 0 0 0 3px rgba(50, 184, 247, 0.25) !important;
+        }
+      `}</style>
+
       <div style={{ backgroundColor: tema.fundoCard, padding: '40px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', width: '100%', maxWidth: '400px' }}>
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
           <img src={logoImg} alt="Logo Globalnet" style={{ maxWidth: '180px', maxHeight: '80px', filter: isDarkMode ? 'brightness(0) invert(1)' : 'none', transition: 'filter 0.3s' }} />
