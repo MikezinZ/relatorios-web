@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Edit, Trash2, Ticket, CheckCircle2, AlertCircle, Clock3, Calendar,
   Monitor, LayoutGrid, Network, Wifi, Settings, FileText, Mail, Key,
   Phone, Smartphone, Shield, HardDrive, Lock, Clock, Video, Printer,
-  Mouse, HelpCircle, Wrench, Timer
+  Mouse, HelpCircle, Wrench, Timer, MessageSquare, Send
 } from 'lucide-react';
 
 const renderizarIconeCategoria = (catText) => {
+  // ... (mantenha a mesma função de ícones de categoria que já estava aqui)
   if (!catText) return <Wrench size={14} />;
   const texto = catText.toLowerCase();
   if (texto.includes('hardware')) return <Monitor size={14} />;
@@ -30,19 +31,19 @@ const renderizarIconeCategoria = (catText) => {
   return <Wrench size={14} />;
 }
 
-const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdicao, apagarRelatorio }) => {
+// NOVO: Adicionamos o adicionarAnotacao aqui
+const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdicao, apagarRelatorio, adicionarAnotacao }) => {
+  const [textoAnotacao, setTextoAnotacao] = useState(''); // Estado para o campo de digitação
+
   let corStatusBg = '#e2e8f0'; let corStatusTxt = '#475569'; let IconeStatus = CheckCircle2;
   if (relatorio.status === 'Resolvido') { corStatusBg = '#dcfce7'; corStatusTxt = '#166534'; IconeStatus = CheckCircle2; }
   if (relatorio.status === 'Andamento') { corStatusBg = '#fef08a'; corStatusTxt = '#854d0e'; IconeStatus = Clock3; }
   if (relatorio.status === 'Aberto') { corStatusBg = '#fee2e2'; corStatusTxt = '#991b1b'; IconeStatus = AlertCircle; }
 
-  // === LÓGICA DO SLA (TEMPO DE VIDA) ===
   let badgeSLA = null;
   if (relatorio.status !== 'Resolvido') {
     const hoje = new Date();
-    // Pega a data que foi criado (ou a do atendimento se não tiver a de criação)
     const dataCriacao = new Date(relatorio.criado_em || relatorio.data_atendimento);
-    // Calcula a diferença em dias
     const diffTime = Math.abs(hoje - dataCriacao);
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     
@@ -51,11 +52,8 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
     let textoSla = 'Aberto hoje';
     let piscar = false;
 
-    if (diffDays === 1) {
-      corSlaBg = '#fef08a'; corSlaTxt = '#854d0e'; textoSla = 'Aberto há 1 dia';
-    } else if (diffDays >= 2) {
-      corSlaBg = '#fee2e2'; corSlaTxt = '#991b1b'; textoSla = `Atrasado: ${diffDays} dias`; piscar = true;
-    }
+    if (diffDays === 1) { corSlaBg = '#fef08a'; corSlaTxt = '#854d0e'; textoSla = 'Aberto há 1 dia'; } 
+    else if (diffDays >= 2) { corSlaBg = '#fee2e2'; corSlaTxt = '#991b1b'; textoSla = `Atrasado: ${diffDays} dias`; piscar = true; }
 
     badgeSLA = (
       <span className={piscar ? "animate-pulse" : ""} style={{ fontSize: '12px', backgroundColor: corSlaBg, color: corSlaTxt, padding: '6px 10px', borderRadius: '6px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px', border: piscar ? '1px solid #ef4444' : 'none' }}>
@@ -63,6 +61,13 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
       </span>
     );
   }
+
+  const handleEnviarAnotacao = () => {
+    if (adicionarAnotacao) {
+      adicionarAnotacao(relatorio.id, textoAnotacao);
+      setTextoAnotacao(''); // Limpa o campo após enviar
+    }
+  };
 
   return (
     <div style={{ border: relatorio.is_ticket && relatorio.status !== 'Resolvido' ? '2px solid #f43f5e' : `1px solid ${tema.borda}`, padding: '20px', borderRadius: '12px', backgroundColor: tema.fundoCard, position: 'relative', transition: '0.3s', marginTop: relatorio.is_ticket ? '12px' : '0', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
@@ -96,15 +101,64 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
         <span style={{ fontSize: '12px', backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', color: tema.texto1, padding: '6px 10px', borderRadius: '6px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '5px' }}>
           <Calendar size={14} /> {formatarData(relatorio.data_atendimento || relatorio.criado_em.split('T')[0])}
         </span>
-        
-        {/* SELO DE SLA RENDERIZADO AQUI */}
         {badgeSLA}
-
       </div>
 
       <p style={{ margin: '8px 0', fontSize: '14px', color: tema.texto1, lineHeight: '1.5' }}><strong>PROBLEMA:</strong> {relatorio.solit_prob}</p>
       <p style={{ margin: '8px 0', fontSize: '14px', color: tema.texto1, lineHeight: '1.5' }}><strong>RESOLUÇÃO:</strong> {relatorio.resolucao}</p>
       {relatorio.obs && <p style={{ margin: '8px 0', fontSize: '14px', color: tema.texto2, lineHeight: '1.5', fontStyle: 'italic' }}><strong>OBS:</strong> {relatorio.obs}</p>}
+
+      {/* ========================================================= */}
+      {/* HISTÓRICO DE INTERAÇÕES (LINHA DO TEMPO) */}
+      {/* ========================================================= */}
+      {relatorio.is_ticket && (
+        <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: `1px solid ${tema.borda}` }}>
+          <h4 style={{ margin: '0 0 15px 0', fontSize: '12px', color: tema.texto2, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <MessageSquare size={14} /> Diário do Ticket
+          </h4>
+          
+          <div style={{ paddingLeft: '12px', borderLeft: `2px solid ${isDarkMode ? '#334155' : '#e2e8f0'}`, display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '15px' }}>
+            {(!relatorio.anotacoes || relatorio.anotacoes.length === 0) ? (
+               <span style={{ fontSize: '12px', color: tema.texto2, fontStyle: 'italic' }}>Nenhuma anotação registrada ainda.</span>
+            ) : (
+              relatorio.anotacoes.map(nota => (
+                <div key={nota.id} style={{ position: 'relative' }}>
+                  {/* Bolinha da Timeline */}
+                  <div style={{ position: 'absolute', left: '-17px', top: '4px', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#32b8f7', boxShadow: `0 0 0 3px ${tema.fundoCard}` }}></div>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <strong style={{ fontSize: '12px', color: tema.texto1 }}>{nota.autor_nome}</strong>
+                    <span style={{ fontSize: '10px', color: tema.texto2 }}>{new Date(nota.criado_em).toLocaleString('pt-BR')}</span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '13px', color: tema.texto1, lineHeight: '1.4', backgroundColor: isDarkMode ? '#0f172a' : '#f8fafc', padding: '10px', borderRadius: '6px', border: `1px solid ${tema.borda}` }}>
+                    {nota.texto}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Campo para adicionar nova anotação (Some quando o ticket é resolvido) */}
+          {relatorio.status !== 'Resolvido' && (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input 
+                type="text" 
+                value={textoAnotacao}
+                onChange={(e) => setTextoAnotacao(e.target.value)}
+                placeholder="Adicionar atualização (Work Note)..." 
+                style={{ flex: 1, padding: '10px 12px', borderRadius: '8px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, fontSize: '13px' }}
+                onKeyDown={(e) => { if(e.key === 'Enter') handleEnviarAnotacao(); }}
+              />
+              <button 
+                onClick={handleEnviarAnotacao}
+                disabled={!textoAnotacao.trim()}
+                style={{ backgroundColor: textoAnotacao.trim() ? '#32b8f7' : (isDarkMode ? '#334155' : '#cbd5e1'), color: '#fff', border: 'none', padding: '0 15px', borderRadius: '8px', cursor: textoAnotacao.trim() ? 'pointer' : 'not-allowed', fontWeight: 'bold', transition: '0.2s', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Send size={14} /> Enviar
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div style={{ marginTop: '15px', paddingTop: '12px', borderTop: `1px dashed ${tema.borda}`, fontSize: '12px', color: tema.texto2, display: 'flex', justifyContent: 'space-between' }}>
         <span>Equipe: <strong style={{ color: tema.texto1 }}>{relatorio.atendente_nome}</strong></span>

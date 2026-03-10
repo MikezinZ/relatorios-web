@@ -5,7 +5,8 @@ import SkeletonCard from '../components/SkeletonCard';
 
 const RadarTickets = ({ 
   tema, isDarkMode, animationParent, isLoading, relatorios, 
-  formatarData, iniciarEdicao, apagarRelatorio 
+  formatarData, iniciarEdicao, apagarRelatorio,
+  adicionarAnotacao // <--- 1. Recebemos a função aqui!
 }) => {
   
   // Separamos os tickets por status para as colunas do Kanban
@@ -42,7 +43,18 @@ const RadarTickets = ({
               {ticketsAbertos.length === 0 ? (
                 <p style={{ color: tema.texto2, fontSize: '13px', textAlign: 'center', margin: '20px 0' }}>Nenhum ticket aguardando.</p>
               ) : (
-                ticketsAbertos.map(relatorio => <CartaoRelatorio key={relatorio.id} relatorio={relatorio} tema={tema} isDarkMode={isDarkMode} formatarData={formatarData} iniciarEdicao={iniciarEdicao} apagarRelatorio={apagarRelatorio} />)
+                ticketsAbertos.map(relatorio => 
+                  <CartaoRelatorio 
+                    key={relatorio.id} 
+                    relatorio={relatorio} 
+                    tema={tema} 
+                    isDarkMode={isDarkMode} 
+                    formatarData={formatarData} 
+                    iniciarEdicao={iniciarEdicao} 
+                    apagarRelatorio={apagarRelatorio} 
+                    adicionarAnotacao={adicionarAnotacao} /* <--- 2. Repassamos aqui */
+                  />
+                )
               )}
             </div>
           </div>
@@ -56,7 +68,18 @@ const RadarTickets = ({
               {ticketsAndamento.length === 0 ? (
                 <p style={{ color: tema.texto2, fontSize: '13px', textAlign: 'center', margin: '20px 0' }}>A equipe não está trabalhando em nenhum ticket agora.</p>
               ) : (
-                ticketsAndamento.map(relatorio => <CartaoRelatorio key={relatorio.id} relatorio={relatorio} tema={tema} isDarkMode={isDarkMode} formatarData={formatarData} iniciarEdicao={iniciarEdicao} apagarRelatorio={apagarRelatorio} />)
+                ticketsAndamento.map(relatorio => 
+                  <CartaoRelatorio 
+                    key={relatorio.id} 
+                    relatorio={relatorio} 
+                    tema={tema} 
+                    isDarkMode={isDarkMode} 
+                    formatarData={formatarData} 
+                    iniciarEdicao={iniciarEdicao} 
+                    apagarRelatorio={apagarRelatorio} 
+                    adicionarAnotacao={adicionarAnotacao} /* <--- 2. E aqui */
+                  />
+                )
               )}
             </div>
           </div>
@@ -70,7 +93,18 @@ const RadarTickets = ({
               {ticketsResolvidos.length === 0 ? (
                 <p style={{ color: tema.texto2, fontSize: '13px', textAlign: 'center', margin: '20px 0' }}>Sem histórico recente.</p>
               ) : (
-                ticketsResolvidos.map(relatorio => <CartaoRelatorio key={relatorio.id} relatorio={relatorio} tema={tema} isDarkMode={isDarkMode} formatarData={formatarData} iniciarEdicao={iniciarEdicao} apagarRelatorio={apagarRelatorio} />)
+                ticketsResolvidos.map(relatorio => 
+                  <CartaoRelatorio 
+                    key={relatorio.id} 
+                    relatorio={relatorio} 
+                    tema={tema} 
+                    isDarkMode={isDarkMode} 
+                    formatarData={formatarData} 
+                    iniciarEdicao={iniciarEdicao} 
+                    apagarRelatorio={apagarRelatorio}
+                    adicionarAnotacao={adicionarAnotacao} /* <--- 2. E aqui também! */
+                  />
+                )
               )}
             </div>
           </div>

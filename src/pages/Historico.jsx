@@ -7,7 +7,8 @@ const Historico = ({
   tema, isDarkMode, busca, setBusca, filtroDataTela, setFiltroDataTela, filtroStatusHist, setFiltroStatusHist, 
   filtroCategoriaHist, setFiltroCategoriaHist, isFiltrando, limparFiltrosHistorico, pdfDataInicio, setPdfDataInicio, 
   pdfDataFim, setPdfDataFim, pdfAtendente, setPdfAtendente, gerarPDF, gerarTXT, gerarCSV, animationParent, 
-  isLoading, relatoriosFiltradosHist, relatoriosHoje, relatoriosAntigos, formatarData, hojePadrao, iniciarEdicao, apagarRelatorio
+  isLoading, relatoriosFiltradosHist, relatoriosHoje, relatoriosAntigos, formatarData, hojePadrao, iniciarEdicao, 
+  apagarRelatorio, adicionarAnotacao // <--- 1. Recebemos a função aqui
 }) => {
   return (
     <div style={{ backgroundColor: tema.fundoCard, padding: '30px', borderRadius: '12px', border: `1px solid ${tema.borda}`, boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
@@ -93,7 +94,7 @@ const Historico = ({
             </div>
             {relatoriosFiltradosHist.length === 0 ? <p style={{ color: tema.texto2, fontStyle: 'italic', marginBottom: '40px', textAlign: 'center', padding: '20px' }}>Nenhum atendimento corresponde aos filtros.</p> : <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '40px' }}>
               {relatoriosFiltradosHist.map(relatorio => (
-                <CartaoRelatorio key={relatorio.id} relatorio={relatorio} tema={tema} isDarkMode={isDarkMode} formatarData={formatarData} iniciarEdicao={iniciarEdicao} apagarRelatorio={apagarRelatorio} />
+                <CartaoRelatorio key={relatorio.id} relatorio={relatorio} tema={tema} isDarkMode={isDarkMode} formatarData={formatarData} iniciarEdicao={iniciarEdicao} apagarRelatorio={apagarRelatorio} adicionarAnotacao={adicionarAnotacao} /> /* <--- 2. Repassamos aqui */
               ))}
             </div>}
           </>
@@ -105,14 +106,14 @@ const Historico = ({
 
             {relatoriosHoje.length === 0 ? <p style={{ color: tema.texto2, fontStyle: 'italic', marginBottom: '40px', textAlign: 'center', padding: '20px' }}>Nenhum atendimento registrado hoje.</p> : <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '40px' }}>
               {relatoriosHoje.map(relatorio => (
-                <CartaoRelatorio key={relatorio.id} relatorio={relatorio} tema={tema} isDarkMode={isDarkMode} formatarData={formatarData} iniciarEdicao={iniciarEdicao} apagarRelatorio={apagarRelatorio} />
+                <CartaoRelatorio key={relatorio.id} relatorio={relatorio} tema={tema} isDarkMode={isDarkMode} formatarData={formatarData} iniciarEdicao={iniciarEdicao} apagarRelatorio={apagarRelatorio} adicionarAnotacao={adicionarAnotacao} /> /* <--- 2. E aqui */
               ))}
             </div>}
 
             <h3 style={{ borderBottom: `2px solid ${tema.borda}`, paddingBottom: '10px', color: tema.texto1, marginBottom: '20px', fontSize: '18px' }}>Últimos Atendimentos</h3>
             {relatoriosAntigos.length === 0 ? <p style={{ color: tema.texto2, fontStyle: 'italic', textAlign: 'center', padding: '20px' }}>Nenhum histórico antigo encontrado.</p> : <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {relatoriosAntigos.map(relatorio => (
-                <CartaoRelatorio key={relatorio.id} relatorio={relatorio} tema={tema} isDarkMode={isDarkMode} formatarData={formatarData} iniciarEdicao={iniciarEdicao} apagarRelatorio={apagarRelatorio} />
+                <CartaoRelatorio key={relatorio.id} relatorio={relatorio} tema={tema} isDarkMode={isDarkMode} formatarData={formatarData} iniciarEdicao={iniciarEdicao} apagarRelatorio={apagarRelatorio} adicionarAnotacao={adicionarAnotacao} /> /* <--- 2. E aqui */
               ))}
             </div>}
           </>

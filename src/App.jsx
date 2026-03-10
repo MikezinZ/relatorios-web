@@ -230,6 +230,27 @@ function App() {
     setAtendentesSelecionados(atendenteId ? [parseInt(atendenteId)] : []);
   }
 
+  const adicionarAnotacao = (relatorioId, texto) => {
+    if (!texto.trim()) return;
+    const toastId = toast.loading('Salvando work note...');
+    
+    axios.post('https://api-ti-relatorios.onrender.com/api/anotacoes/', 
+      { relatorio: relatorioId, texto: texto }, 
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+    .then(response => {
+      // Atualiza o ticket na tela com a nova anotação instantaneamente
+      setRelatorios(relatorios.map(r => {
+        if (r.id === relatorioId) {
+          return { ...r, anotacoes: [...(r.anotacoes || []), response.data] };
+        }
+        return r;
+      }));
+      toast.success("Anotação registrada com sucesso!", { id: toastId });
+    })
+    .catch(error => toast.error("Erro ao salvar anotação.", { id: toastId }));
+  }
+
   const limparFiltrosHistorico = () => {
     setBusca(''); setFiltroDataTela(''); setFiltroCategoriaHist(''); setFiltroStatusHist(''); setFiltroAtendenteHist('');
   }
@@ -409,7 +430,8 @@ function App() {
           <RadarTickets 
             tema={tema} isDarkMode={isDarkMode} filtroTicket={filtroTicket} setFiltroTicket={setFiltroTicket} 
             animationParent={animationParent} isLoading={isLoading} relatorios={relatorios} formatarData={formatarData} 
-            iniciarEdicao={iniciarEdicao} apagarRelatorio={apagarRelatorio} 
+            iniciarEdicao={iniciarEdicao} apagarRelatorio={apagarRelatorio}
+            adicionarAnotacao={adicionarAnotacao}
           />
         )}
 
@@ -423,19 +445,7 @@ function App() {
             gerarPDF={gerarPDF} gerarTXT={gerarTXT} gerarCSV={gerarCSV} animationParent={animationParent} isLoading={isLoading} 
             relatoriosFiltradosHist={relatoriosFiltradosHist} relatoriosHoje={relatoriosHoje} relatoriosAntigos={relatoriosAntigos} 
             formatarData={formatarData} hojePadrao={hojePadrao} iniciarEdicao={iniciarEdicao} apagarRelatorio={apagarRelatorio} 
-          />
-        )}
-
-        {abaAtiva === 'gestao' && (
-          <DashboardGestao 
-            tema={tema} isDarkMode={isDarkMode} relatorios={relatorios} relatoriosHoje={relatoriosHoje} 
-            empresasUnicas={empresasUnicas} dadosGraficoStatus={dadosGraficoStatus} dadosGraficoCategoria={dadosGraficoCategoria} 
-            dadosGraficoEmpresas={dadosGraficoEmpresas} CORES_STATUS={CORES_STATUS} CORES_CATEGORIAS={CORES_CATEGORIAS} 
-            editandoUsuarioId={editandoUsuarioId} handleSalvarUsuario={handleSalvarUsuario} novoUsername={novoUsername} 
-            setNovoUsername={setNovoUsername} novaSenha={novaSenha} setNovaSenha={setNovaSenha} novoIsStaff={novoIsStaff} 
-            setNovoIsStaff={setNovoIsStaff} novoIsActive={novoIsActive} setNovoIsActive={setNovoIsActive} 
-            limparFormularioUsuario={limparFormularioUsuario} animationParent={animationParent} usuarios={usuarios} 
-            iniciarEdicaoUsuario={iniciarEdicaoUsuario} apagarUsuario={apagarUsuario}
+            adicionarAnotacao={adicionarAnotacao}
           />
         )}
       </div>
