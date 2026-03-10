@@ -3,10 +3,9 @@ import {
   Edit, Trash2, Ticket, CheckCircle2, AlertCircle, Clock3, Calendar,
   Monitor, LayoutGrid, Network, Wifi, Settings, FileText, Mail, Key,
   Phone, Smartphone, Shield, HardDrive, Lock, Clock, Video, Printer,
-  Mouse, HelpCircle, Wrench
+  Mouse, HelpCircle, Wrench, Timer
 } from 'lucide-react';
 
-// Função para escolher o ícone baseado na categoria
 const renderizarIconeCategoria = (catText) => {
   if (!catText) return <Wrench size={14} />;
   const texto = catText.toLowerCase();
@@ -31,12 +30,39 @@ const renderizarIconeCategoria = (catText) => {
   return <Wrench size={14} />;
 }
 
-// O Componente em si (recebendo as propriedades do App.jsx)
 const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdicao, apagarRelatorio }) => {
   let corStatusBg = '#e2e8f0'; let corStatusTxt = '#475569'; let IconeStatus = CheckCircle2;
   if (relatorio.status === 'Resolvido') { corStatusBg = '#dcfce7'; corStatusTxt = '#166534'; IconeStatus = CheckCircle2; }
   if (relatorio.status === 'Andamento') { corStatusBg = '#fef08a'; corStatusTxt = '#854d0e'; IconeStatus = Clock3; }
   if (relatorio.status === 'Aberto') { corStatusBg = '#fee2e2'; corStatusTxt = '#991b1b'; IconeStatus = AlertCircle; }
+
+  // === LÓGICA DO SLA (TEMPO DE VIDA) ===
+  let badgeSLA = null;
+  if (relatorio.status !== 'Resolvido') {
+    const hoje = new Date();
+    // Pega a data que foi criado (ou a do atendimento se não tiver a de criação)
+    const dataCriacao = new Date(relatorio.criado_em || relatorio.data_atendimento);
+    // Calcula a diferença em dias
+    const diffTime = Math.abs(hoje - dataCriacao);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    let corSlaBg = isDarkMode ? '#334155' : '#f1f5f9';
+    let corSlaTxt = tema.texto2;
+    let textoSla = 'Aberto hoje';
+    let piscar = false;
+
+    if (diffDays === 1) {
+      corSlaBg = '#fef08a'; corSlaTxt = '#854d0e'; textoSla = 'Aberto há 1 dia';
+    } else if (diffDays >= 2) {
+      corSlaBg = '#fee2e2'; corSlaTxt = '#991b1b'; textoSla = `Atrasado: ${diffDays} dias`; piscar = true;
+    }
+
+    badgeSLA = (
+      <span className={piscar ? "animate-pulse" : ""} style={{ fontSize: '12px', backgroundColor: corSlaBg, color: corSlaTxt, padding: '6px 10px', borderRadius: '6px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px', border: piscar ? '1px solid #ef4444' : 'none' }}>
+        <Timer size={14} /> {textoSla}
+      </span>
+    );
+  }
 
   return (
     <div style={{ border: relatorio.is_ticket && relatorio.status !== 'Resolvido' ? '2px solid #f43f5e' : `1px solid ${tema.borda}`, padding: '20px', borderRadius: '12px', backgroundColor: tema.fundoCard, position: 'relative', transition: '0.3s', marginTop: relatorio.is_ticket ? '12px' : '0', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
@@ -70,6 +96,10 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
         <span style={{ fontSize: '12px', backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', color: tema.texto1, padding: '6px 10px', borderRadius: '6px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '5px' }}>
           <Calendar size={14} /> {formatarData(relatorio.data_atendimento || relatorio.criado_em.split('T')[0])}
         </span>
+        
+        {/* SELO DE SLA RENDERIZADO AQUI */}
+        {badgeSLA}
+
       </div>
 
       <p style={{ margin: '8px 0', fontSize: '14px', color: tema.texto1, lineHeight: '1.5' }}><strong>PROBLEMA:</strong> {relatorio.solit_prob}</p>
