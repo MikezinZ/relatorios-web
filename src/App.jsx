@@ -13,6 +13,7 @@ import NovoAtendimento from './pages/NovoAtendimento'
 import RadarTickets from './pages/RadarTickets'
 import Historico from './pages/Historico'
 import DashboardGestao from './pages/DashboardGestao'
+import MinhasRotinas from './pages/MinhasRotinas' // === NOVO COMPONENTE ===
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '')
@@ -63,6 +64,10 @@ function App() {
 
   const [isLoading, setIsLoading] = useState(true)
   const [animationParent] = useAutoAnimate()
+
+  // === NOVOS ESTADOS PARA ROTINAS ===
+  const [tarefas, setTarefas] = useState([])
+  const [notificacoesPendentes, setNotificacoesPendentes] = useState(0)
 
   useEffect(() => {
     localStorage.setItem('temaEscuro', isDarkMode)
@@ -118,12 +123,28 @@ function App() {
         })
 
       buscarUsuarios()
+      buscarTarefas() // === BUSCA TAREFAS NO LOGIN ===
 
       if (atendenteId && atendentesSelecionados.length === 0 && !editandoId) {
         setAtendentesSelecionados([parseInt(atendenteId)]);
       }
     }
   }, [token, atendenteId])
+
+  // === FUNÇÕES DO MÓDULO DE ROTINAS ===
+  const buscarTarefas = (usuarioIdFiltro = null) => {
+    let url = 'https://api-ti-relatorios.onrender.com/api/tarefas/';
+    if (usuarioIdFiltro) url += `?usuario_id=${usuarioIdFiltro}`;
+
+    axios.get(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then(response => {
+        setTarefas(response.data);
+        const hoje = new Date().toISOString().split('T')[0];
+        const urgentes = response.data.filter(t => !t.concluida && t.data_vencimento && t.data_vencimento <= hoje);
+        setNotificacoesPendentes(urgentes.length);
+      })
+      .catch(err => console.error("Erro ao buscar tarefas", err));
+  };
 
   const buscarUsuarios = () => {
     axios.get('https://api-ti-relatorios.onrender.com/api/usuarios/', { headers: { Authorization: `Bearer ${token}` } })
@@ -239,7 +260,6 @@ function App() {
       { headers: { Authorization: `Bearer ${token}` } }
     )
     .then(response => {
-      // Atualiza o ticket na tela com a nova anotação instantaneamente
       setRelatorios(relatorios.map(r => {
         if (r.id === relatorioId) {
           return { ...r, anotacoes: [...(r.anotacoes || []), response.data] };
@@ -353,12 +373,10 @@ function App() {
   const CORES_STATUS = { 'Resolvido': '#10b981', 'Andamento': '#eab308', 'Aberto': '#ef4444' };
   const CORES_CATEGORIAS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b', '#f97316', '#06b6d4', '#84cc16', '#d946ef', '#0ea5e9', '#eab308'];
 
-  // ================= TELA RENDERIZADA =================
   if (!token) {
     return (
       <>
         <Toaster theme={isDarkMode ? 'dark' : 'light'} richColors position="bottom-center" duration={5000} expand={true} />
-        
         <Login tema={tema} isDarkMode={isDarkMode} handleLogin={handleLogin} username={username} setUsername={setUsername} password={password} setPassword={setPassword} />
       </>
     )
@@ -382,26 +400,11 @@ function App() {
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
         .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 
-        /* ========================================= */
-        /* === REGRAS DE RESPONSIVIDADE (MOBILE) === */
-        /* ========================================= */
         @media (max-width: 768px) {
-          /* Esconde os textos do menu, deixa só ícones */
           .hide-on-mobile { display: none !important; }
-          
-          /* Reduz a margem da tela toda para ganhar espaço */
           .main-wrapper { padding: 10px !important; }
-          
-          /* Ajusta o menu superior para caber na tela pequena */
-          .menu-container { 
-            padding: 10px !important; 
-            border-radius: 8px !important;
-          }
-          
-          /* Diminui a logo para sobrar espaço para os botões */
+          .menu-container { padding: 10px !important; border-radius: 8px !important; }
           .logo-mobile { height: 28px !important; margin-right: 5px !important; }
-          
-          /* Ajusta os botões do menu para ficarem como botões de app */
           .menu-container button { padding: 10px !important; }
         }
       `}</style>
@@ -412,6 +415,7 @@ function App() {
           tema={tema} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} 
           abaAtiva={abaAtiva} setAbaAtiva={setAbaAtiva} isStaff={isStaff} 
           limparFormularioUsuario={limparFormularioUsuario} handleLogout={handleLogout} 
+          notificacoesPendentes={notificacoesPendentes} // === ENVIANDO O CONTADOR ===
         />
 
         {abaAtiva === 'novo' && (
@@ -446,6 +450,28 @@ function App() {
             relatoriosFiltradosHist={relatoriosFiltradosHist} relatoriosHoje={relatoriosHoje} relatoriosAntigos={relatoriosAntigos} 
             formatarData={formatarData} hojePadrao={hojePadrao} iniciarEdicao={iniciarEdicao} apagarRelatorio={apagarRelatorio} 
             adicionarAnotacao={adicionarAnotacao}
+          />
+        )}
+
+        {/* === ABA DE ROTINAS RENDERIZADA === */}
+        {abaAtiva === 'rotinas' && (
+          <MinhasRotinas 
+            tema={tema} isDarkMode={isDarkMode} token={token} 
+            tarefas={tarefas} buscarTarefas={buscarTarefas} 
+            isStaff={isStaff} usuarios={usuarios} 
+          />
+        )}
+
+        {abaAtiva === 'gestao' && (
+          <DashboardGestao 
+            tema={tema} isDarkMode={isDarkMode} relatorios={relatorios} relatoriosHoje={relatoriosHoje} 
+            empresasUnicas={empresasUnicas} dadosGraficoStatus={dadosGraficoStatus} dadosGraficoCategoria={dadosGraficoCategoria} 
+            dadosGraficoEmpresas={dadosGraficoEmpresas} CORES_STATUS={CORES_STATUS} CORES_CATEGORIAS={CORES_CATEGORIAS} 
+            editandoUsuarioId={editandoUsuarioId} handleSalvarUsuario={handleSalvarUsuario} novoUsername={novoUsername} 
+            setNovoUsername={setNovoUsername} novaSenha={novaSenha} setNovaSenha={setNovaSenha} novoIsStaff={novoIsStaff} 
+            setNovoIsStaff={setNovoIsStaff} novoIsActive={novoIsActive} setNovoIsActive={setNovoIsActive} 
+            limparFormularioUsuario={limparFormularioUsuario} animationParent={animationParent} usuarios={usuarios} 
+            iniciarEdicaoUsuario={iniciarEdicaoUsuario} apagarUsuario={apagarUsuario}
           />
         )}
       </div>
