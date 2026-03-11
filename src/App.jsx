@@ -273,6 +273,23 @@ function App() {
     .catch(error => toast.error("Erro ao salvar anotação.", { id: toastId }));
   }
 
+  // === NOVA FUNÇÃO: MOVER TICKET (DRAG AND DROP) ===
+  const moverTicket = (id, novoStatus) => {
+    // 1. Atualização Otimista: Muda na tela na mesma hora, para ficar super fluido!
+    setRelatorios(relatorios.map(r => r.id === id ? { ...r, status: novoStatus } : r));
+
+    // 2. Avisa o banco de dados em background usando PATCH (atualiza só o campo de status)
+    axios.patch(`https://api-ti-relatorios.onrender.com/api/relatorios/${id}/`, 
+      { status: novoStatus }, 
+      { headers: { Authorization: `Bearer ${token}` } }
+    ).then(() => {
+      toast.success(`Ticket atualizado para: ${novoStatus}`);
+    }).catch(error => {
+      toast.error("Erro ao mover o ticket. Ele voltará à posição original.");
+      buscarTarefas(); // Em caso de erro real no servidor, refaz a busca
+    });
+  }
+
   const limparFiltrosHistorico = () => {
     setBusca(''); setFiltroDataTela(''); setFiltroCategoriaHist(''); setFiltroStatusHist(''); setFiltroAtendenteHist('');
   }
@@ -455,6 +472,7 @@ function App() {
             animationParent={animationParent} isLoading={isLoading} relatorios={relatorios} formatarData={formatarData} 
             iniciarEdicao={iniciarEdicao} apagarRelatorio={apagarRelatorio}
             adicionarAnotacao={adicionarAnotacao}
+            moverTicket={moverTicket} 
           />
         )}
 
