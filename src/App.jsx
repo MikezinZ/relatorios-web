@@ -377,7 +377,7 @@ function App() {
     return (
       <>
         <Toaster theme={isDarkMode ? 'dark' : 'light'} richColors position="bottom-center" duration={5000} expand={true} />
-        <Login tema={tema} isDarkMode={isDarkMode} handleLogin={handleLogin} username={username} setUsername={setUsername} password={password} setPassword={setPassword} />
+        <Login tema={tema} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} handleLogin={handleLogin} username={username} setUsername={setUsername} password={password} setPassword={setPassword} />
       </>
     )
   }
