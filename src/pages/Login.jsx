@@ -68,7 +68,7 @@ const Login = ({ tema, isDarkMode, setIsDarkMode, handleLogin, username, setUser
             Bem-vindo ao<br />seu <span style={{ color: isDarkMode ? '#32b8f7' : '#fde047' }}>Workspace.</span>
           </h1>
           <p style={{ fontSize: '18px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.6', marginBottom: '40px' }}>
-            Gerencie tickets, acompanhe a fila de chamados e organize suas rotinas de T.I. em uma única plataforma de alta performance.
+            Sistema interno de relatórios, gerenciamento de tickets e tarefas em uma plataforma exclusiva para equipe interna de Ti
           </p>
 
           <div style={{ display: 'flex', gap: '15px' }}>
