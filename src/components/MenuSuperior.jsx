@@ -32,29 +32,27 @@ const MenuSuperior = ({
           <Ticket size={18} /> <span className="hide-on-mobile">Tickets</span>
         </button>
 
-        {/* === NOVO BOTÃO: MINHAS ROTINAS + NOTIFICAÇÕES === */}
+        {/*Botão de notificação*/}
         <button 
           onClick={() => setAbaAtiva('rotinas')} 
           style={{ 
             padding: '10px 12px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', 
             backgroundColor: abaAtiva === 'rotinas' ? '#32b8f7' : 'transparent', 
             color: abaAtiva === 'rotinas' ? '#fff' : tema.texto1, 
-            transition: '0.2s', display: 'flex', alignItems: 'center', gap: '6px',
-            position: 'relative'
+            transition: '0.2s', display: 'flex', alignItems: 'center', gap: '6px'
           }}
         >
           <ListChecks size={18} /> 
           <span className="hide-on-mobile">Rotinas</span>
           
-          {notificacoesPendentes > 0 && (
-            <span style={{ 
-              backgroundColor: '#ef4444', color: 'white', fontSize: '10px', 
-              borderRadius: '50%', padding: '2px 6px', fontWeight: 'bold',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-              marginLeft: '4px'
-            }}>
-              {notificacoesPendentes}
-            </span>
+          {/* O SINO DE NOTIFICAÇÃO AQUI */}
+          {notificacoesPendentes > 0 ? (
+            <div className="animate-pulse" style={{ display: 'flex', alignItems: 'center', backgroundColor: '#ef4444', borderRadius: '12px', padding: '2px 6px', marginLeft: '4px' }}>
+              <Bell size={12} color="white" style={{ marginRight: '4px' }}/>
+              <span style={{ color: 'white', fontSize: '11px', fontWeight: 'bold' }}>{notificacoesPendentes}</span>
+            </div>
+          ) : (
+            <Bell size={16} style={{ marginLeft: '4px', opacity: 0.5 }} />
           )}
         </button>
 
