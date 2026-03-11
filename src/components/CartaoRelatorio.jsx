@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 
 const renderizarIconeCategoria = (catText) => {
-  // ... (mantenha a mesma função de ícones de categoria que já estava aqui)
   if (!catText) return <Wrench size={14} />;
   const texto = catText.toLowerCase();
   if (texto.includes('hardware')) return <Monitor size={14} />;
@@ -31,14 +30,17 @@ const renderizarIconeCategoria = (catText) => {
   return <Wrench size={14} />;
 }
 
-// NOVO: Adicionamos o adicionarAnotacao aqui
 const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdicao, apagarRelatorio, adicionarAnotacao }) => {
-  const [textoAnotacao, setTextoAnotacao] = useState(''); // Estado para o campo de digitação
+  const [textoAnotacao, setTextoAnotacao] = useState('');
 
-  let corStatusBg = '#e2e8f0'; let corStatusTxt = '#475569'; let IconeStatus = CheckCircle2;
-  if (relatorio.status === 'Resolvido') { corStatusBg = '#dcfce7'; corStatusTxt = '#166534'; IconeStatus = CheckCircle2; }
-  if (relatorio.status === 'Andamento') { corStatusBg = '#fef08a'; corStatusTxt = '#854d0e'; IconeStatus = Clock3; }
-  if (relatorio.status === 'Aberto') { corStatusBg = '#fee2e2'; corStatusTxt = '#991b1b'; IconeStatus = AlertCircle; }
+  // Cores dinâmicas para as etiquetas com transparência no Dark Mode para combinar com o vidro
+  let corStatusBg = isDarkMode ? 'rgba(226, 232, 240, 0.1)' : '#e2e8f0'; 
+  let corStatusTxt = isDarkMode ? '#cbd5e1' : '#475569'; 
+  let IconeStatus = CheckCircle2;
+
+  if (relatorio.status === 'Resolvido') { corStatusBg = isDarkMode ? 'rgba(16, 185, 129, 0.15)' : '#dcfce7'; corStatusTxt = isDarkMode ? '#34d399' : '#166534'; IconeStatus = CheckCircle2; }
+  if (relatorio.status === 'Andamento') { corStatusBg = isDarkMode ? 'rgba(234, 179, 8, 0.15)' : '#fef08a'; corStatusTxt = isDarkMode ? '#fde047' : '#854d0e'; IconeStatus = Clock3; }
+  if (relatorio.status === 'Aberto') { corStatusBg = isDarkMode ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2'; corStatusTxt = isDarkMode ? '#fca5a5' : '#991b1b'; IconeStatus = AlertCircle; }
 
   let badgeSLA = null;
   if (relatorio.status !== 'Resolvido') {
@@ -47,16 +49,16 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
     const diffTime = Math.abs(hoje - dataCriacao);
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     
-    let corSlaBg = isDarkMode ? '#334155' : '#f1f5f9';
+    let corSlaBg = isDarkMode ? 'rgba(51, 65, 85, 0.4)' : '#f1f5f9';
     let corSlaTxt = tema.texto2;
     let textoSla = 'Aberto hoje';
     let piscar = false;
 
-    if (diffDays === 1) { corSlaBg = '#fef08a'; corSlaTxt = '#854d0e'; textoSla = 'Aberto há 1 dia'; } 
-    else if (diffDays >= 2) { corSlaBg = '#fee2e2'; corSlaTxt = '#991b1b'; textoSla = `Atrasado: ${diffDays} dias`; piscar = true; }
+    if (diffDays === 1) { corSlaBg = isDarkMode ? 'rgba(234, 179, 8, 0.15)' : '#fef08a'; corSlaTxt = isDarkMode ? '#fde047' : '#854d0e'; textoSla = 'Aberto há 1 dia'; } 
+    else if (diffDays >= 2) { corSlaBg = isDarkMode ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2'; corSlaTxt = isDarkMode ? '#fca5a5' : '#991b1b'; textoSla = `Atrasado: ${diffDays} dias`; piscar = true; }
 
     badgeSLA = (
-      <span className={piscar ? "animate-pulse" : ""} style={{ fontSize: '12px', backgroundColor: corSlaBg, color: corSlaTxt, padding: '6px 10px', borderRadius: '6px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px', border: piscar ? '1px solid #ef4444' : 'none' }}>
+      <span className={piscar ? "animate-pulse" : ""} style={{ fontSize: '11px', backgroundColor: corSlaBg, color: corSlaTxt, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px', border: piscar ? '1px solid rgba(239, 68, 68, 0.5)' : `1px solid ${tema.borda}` }}>
         <Timer size={14} /> {textoSla}
       </span>
     );
@@ -65,15 +67,16 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
   const handleEnviarAnotacao = () => {
     if (adicionarAnotacao) {
       adicionarAnotacao(relatorio.id, textoAnotacao);
-      setTextoAnotacao(''); // Limpa o campo após enviar
+      setTextoAnotacao('');
     }
   };
 
   return (
-    <div style={{ border: relatorio.is_ticket && relatorio.status !== 'Resolvido' ? '2px solid #f43f5e' : `1px solid ${tema.borda}`, padding: '20px', borderRadius: '12px', backgroundColor: tema.fundoCard, position: 'relative', transition: '0.3s', marginTop: relatorio.is_ticket ? '12px' : '0', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+    // Adicionamos a classe 'glass-panel' e removemos o backgroundColor fixo inline
+    <div className="glass-panel" style={{ border: relatorio.is_ticket && relatorio.status !== 'Resolvido' ? '2px solid rgba(244, 63, 94, 0.8)' : `1px solid ${tema.borda}`, padding: '24px', borderRadius: '16px', position: 'relative', transition: 'all 0.3s ease', marginTop: relatorio.is_ticket ? '14px' : '0' }}>
 
       {relatorio.is_ticket && (
-        <span style={{ position: 'absolute', top: '-14px', left: '20px', backgroundColor: relatorio.status === 'Resolvido' ? '#10b981' : '#f43f5e', color: '#fff', padding: '6px 14px', borderRadius: '20px', fontWeight: 'bold', fontSize: '11px', border: `2px solid ${tema.fundoCard}`, boxShadow: '0 2px 4px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '0.5px' }}>
+        <span style={{ position: 'absolute', top: '-14px', left: '20px', backgroundColor: relatorio.status === 'Resolvido' ? '#10b981' : '#f43f5e', color: '#fff', padding: '6px 14px', borderRadius: '20px', fontWeight: 'bold', fontSize: '11px', border: `2px solid ${isDarkMode ? '#1e293b' : '#fff'}`, boxShadow: '0 4px 10px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '0.5px', zIndex: 10 }}>
           {relatorio.status !== 'Resolvido' && (
             <span style={{ position: 'relative', display: 'flex', width: '8px', height: '8px' }}>
               <span className="animate-ping" style={{ position: 'absolute', display: 'inline-flex', height: '100%', width: '100%', borderRadius: '50%', backgroundColor: '#fff', opacity: 0.7 }}></span>
@@ -84,53 +87,55 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
         </span>
       )}
 
-      <div style={{ position: 'absolute', top: '15px', right: '15px', display: 'flex', gap: '8px' }}>
-        <button onClick={() => iniciarEdicao(relatorio)} style={{ backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', color: tema.texto1, border: 'none', padding: '6px 8px', borderRadius: '6px', cursor: 'pointer', transition: '0.2s' }} title="Editar"><Edit size={16} /></button>
-        <button onClick={() => apagarRelatorio(relatorio.id)} style={{ backgroundColor: '#fed7d7', color: '#991b1b', border: 'none', padding: '6px 8px', borderRadius: '6px', cursor: 'pointer', transition: '0.2s' }} title="Excluir"><Trash2 size={16} /></button>
+      {/* Botões de Ação com a classe btn-premium */}
+      <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', gap: '8px' }}>
+        <button className="btn-premium" onClick={() => iniciarEdicao(relatorio)} style={{ backgroundColor: isDarkMode ? 'rgba(51, 65, 85, 0.5)' : '#f1f5f9', color: tema.texto1, border: `1px solid ${tema.borda}`, padding: '6px 8px', borderRadius: '8px', cursor: 'pointer' }} title="Editar"><Edit size={16} /></button>
+        <button className="btn-premium" onClick={() => apagarRelatorio(relatorio.id)} style={{ backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2', color: '#ef4444', border: `1px solid ${isDarkMode ? 'rgba(239, 68, 68, 0.3)' : '#fca5a5'}`, padding: '6px 8px', borderRadius: '8px', cursor: 'pointer' }} title="Excluir"><Trash2 size={16} /></button>
       </div>
 
-      <h3 style={{ margin: '0 0 12px 0', color: '#32b8f7', fontSize: '18px', paddingRight: '80px', paddingTop: relatorio.is_ticket ? '5px' : '0', fontWeight: '600' }}>{relatorio.empresa} {relatorio.funcionario && <span style={{ color: tema.texto2, fontSize: '14px', fontWeight: '400' }}>- {relatorio.funcionario}</span>}</h3>
+      <h3 style={{ margin: '0 0 12px 0', color: isDarkMode ? '#38bdf8' : '#0284c7', fontSize: '18px', paddingRight: '80px', paddingTop: relatorio.is_ticket ? '5px' : '0', fontWeight: '700', letterSpacing: '-0.5px' }}>
+        {relatorio.empresa} {relatorio.funcionario && <span style={{ color: tema.texto2, fontSize: '14px', fontWeight: '500' }}>• {relatorio.funcionario}</span>}
+      </h3>
 
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: '12px', backgroundColor: isDarkMode ? '#334155' : '#f1f5f9', color: tema.texto2, padding: '6px 10px', borderRadius: '6px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '5px' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '18px', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '11px', backgroundColor: isDarkMode ? 'rgba(51, 65, 85, 0.4)' : '#f1f5f9', color: tema.texto2, padding: '4px 8px', borderRadius: '6px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px', border: `1px solid ${tema.borda}` }}>
           {renderizarIconeCategoria(relatorio.categoria)} {relatorio.categoria || 'Outros'}
         </span>
-        <span style={{ fontSize: '12px', backgroundColor: corStatusBg, color: corStatusTxt, padding: '6px 10px', borderRadius: '6px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}>
+        <span style={{ fontSize: '11px', backgroundColor: corStatusBg, color: corStatusTxt, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', border: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.05)' : 'transparent'}` }}>
           <IconeStatus size={14} /> {relatorio.status || 'Resolvido'}
         </span>
-        <span style={{ fontSize: '12px', backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', color: tema.texto1, padding: '6px 10px', borderRadius: '6px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '5px' }}>
+        <span style={{ fontSize: '11px', backgroundColor: isDarkMode ? 'rgba(51, 65, 85, 0.4)' : '#f1f5f9', color: tema.texto2, padding: '4px 8px', borderRadius: '6px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px', border: `1px solid ${tema.borda}` }}>
           <Calendar size={14} /> {formatarData(relatorio.data_atendimento || relatorio.criado_em.split('T')[0])}
         </span>
         {badgeSLA}
       </div>
 
-      <p style={{ margin: '8px 0', fontSize: '14px', color: tema.texto1, lineHeight: '1.5' }}><strong>PROBLEMA:</strong> {relatorio.solit_prob}</p>
-      <p style={{ margin: '8px 0', fontSize: '14px', color: tema.texto1, lineHeight: '1.5' }}><strong>RESOLUÇÃO:</strong> {relatorio.resolucao}</p>
-      {relatorio.obs && <p style={{ margin: '8px 0', fontSize: '14px', color: tema.texto2, lineHeight: '1.5', fontStyle: 'italic' }}><strong>OBS:</strong> {relatorio.obs}</p>}
+      <div style={{ backgroundColor: isDarkMode ? 'rgba(0,0,0,0.15)' : '#f8fafc', padding: '15px', borderRadius: '10px', border: `1px solid ${tema.borda}` }}>
+        <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: tema.texto1, lineHeight: '1.6' }}><strong>PROBLEMA:</strong> {relatorio.solit_prob}</p>
+        <p style={{ margin: '0', fontSize: '14px', color: tema.texto1, lineHeight: '1.6' }}><strong>RESOLUÇÃO:</strong> {relatorio.resolucao}</p>
+        {relatorio.obs && <p style={{ margin: '8px 0 0 0', fontSize: '13px', color: tema.texto2, lineHeight: '1.5', fontStyle: 'italic' }}><strong>OBS:</strong> {relatorio.obs}</p>}
+      </div>
 
-      {/* ========================================================= */}
-      {/* HISTÓRICO DE INTERAÇÕES (LINHA DO TEMPO) */}
-      {/* ========================================================= */}
+      {/* HISTÓRICO DE INTERAÇÕES (DIÁRIO DO TICKET) */}
       {relatorio.is_ticket && (
-        <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: `1px solid ${tema.borda}` }}>
-          <h4 style={{ margin: '0 0 15px 0', fontSize: '12px', color: tema.texto2, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: `1px solid ${tema.borda}` }}>
+          <h4 style={{ margin: '0 0 15px 0', fontSize: '12px', color: tema.texto2, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700' }}>
             <MessageSquare size={14} /> Diário do Ticket
           </h4>
           
-          <div style={{ paddingLeft: '12px', borderLeft: `2px solid ${isDarkMode ? '#334155' : '#e2e8f0'}`, display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '15px' }}>
+          <div style={{ paddingLeft: '14px', borderLeft: `2px solid ${isDarkMode ? 'rgba(50, 184, 247, 0.3)' : '#cbd5e1'}`, display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '15px' }}>
             {(!relatorio.anotacoes || relatorio.anotacoes.length === 0) ? (
-               <span style={{ fontSize: '12px', color: tema.texto2, fontStyle: 'italic' }}>Nenhuma anotação registrada ainda.</span>
+               <span style={{ fontSize: '13px', color: tema.texto2, fontStyle: 'italic' }}>Nenhuma anotação registrada ainda.</span>
             ) : (
               relatorio.anotacoes.map(nota => (
                 <div key={nota.id} style={{ position: 'relative' }}>
-                  {/* Bolinha da Timeline */}
-                  <div style={{ position: 'absolute', left: '-17px', top: '4px', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#32b8f7', boxShadow: `0 0 0 3px ${tema.fundoCard}` }}></div>
+                  <div style={{ position: 'absolute', left: '-19px', top: '4px', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#32b8f7', boxShadow: `0 0 0 4px ${isDarkMode ? '#1e293b' : '#fff'}` }}></div>
                   
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                     <strong style={{ fontSize: '12px', color: tema.texto1 }}>{nota.autor_nome}</strong>
-                    <span style={{ fontSize: '10px', color: tema.texto2 }}>{new Date(nota.criado_em).toLocaleString('pt-BR')}</span>
+                    <span style={{ fontSize: '11px', color: tema.texto2 }}>{new Date(nota.criado_em).toLocaleString('pt-BR')}</span>
                   </div>
-                  <p style={{ margin: 0, fontSize: '13px', color: tema.texto1, lineHeight: '1.4', backgroundColor: isDarkMode ? '#0f172a' : '#f8fafc', padding: '10px', borderRadius: '6px', border: `1px solid ${tema.borda}` }}>
+                  <p style={{ margin: 0, fontSize: '13px', color: tema.texto1, lineHeight: '1.5', backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.5)' : '#f1f5f9', padding: '12px', borderRadius: '8px', border: `1px solid ${tema.borda}` }}>
                     {nota.texto}
                   </p>
                 </div>
@@ -138,7 +143,6 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
             )}
           </div>
 
-          {/* Campo para adicionar nova anotação (Some quando o ticket é resolvido) */}
           {relatorio.status !== 'Resolvido' && (
             <div style={{ display: 'flex', gap: '8px' }}>
               <input 
@@ -146,22 +150,25 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
                 value={textoAnotacao}
                 onChange={(e) => setTextoAnotacao(e.target.value)}
                 placeholder="Adicionar atualização (Work Note)..." 
-                style={{ flex: 1, padding: '10px 12px', borderRadius: '8px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, fontSize: '13px' }}
+                style={{ flex: 1, padding: '12px 14px', borderRadius: '10px', border: `1px solid ${tema.borda}`, backgroundColor: isDarkMode ? 'rgba(0,0,0,0.2)' : '#fff', color: tema.texto1, fontSize: '13px', transition: '0.2s', outline: 'none' }}
+                onFocus={(e) => e.target.style.borderColor = '#32b8f7'}
+                onBlur={(e) => e.target.style.borderColor = tema.borda}
                 onKeyDown={(e) => { if(e.key === 'Enter') handleEnviarAnotacao(); }}
               />
               <button 
+                className="btn-premium"
                 onClick={handleEnviarAnotacao}
                 disabled={!textoAnotacao.trim()}
-                style={{ backgroundColor: textoAnotacao.trim() ? '#32b8f7' : (isDarkMode ? '#334155' : '#cbd5e1'), color: '#fff', border: 'none', padding: '0 15px', borderRadius: '8px', cursor: textoAnotacao.trim() ? 'pointer' : 'not-allowed', fontWeight: 'bold', transition: '0.2s', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <Send size={14} /> Enviar
+                style={{ backgroundColor: textoAnotacao.trim() ? '#32b8f7' : (isDarkMode ? 'rgba(51, 65, 85, 0.5)' : '#cbd5e1'), color: '#fff', border: 'none', padding: '0 18px', borderRadius: '10px', cursor: textoAnotacao.trim() ? 'pointer' : 'not-allowed', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Send size={16} /> Enviar
               </button>
             </div>
           )}
         </div>
       )}
 
-      <div style={{ marginTop: '15px', paddingTop: '12px', borderTop: `1px dashed ${tema.borda}`, fontSize: '12px', color: tema.texto2, display: 'flex', justifyContent: 'space-between' }}>
-        <span>Equipe: <strong style={{ color: tema.texto1 }}>{relatorio.atendente_nome}</strong></span>
+      <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: `1px dashed ${tema.borda}`, fontSize: '12px', color: tema.texto2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>Equipe: <strong style={{ color: tema.texto1, backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>{relatorio.atendente_nome}</strong></span>
         <span>Lançado em: {new Date(relatorio.criado_em).toLocaleString('pt-BR')}</span>
       </div>
     </div>

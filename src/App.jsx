@@ -73,15 +73,17 @@ function App() {
     localStorage.setItem('temaEscuro', isDarkMode)
   }, [isDarkMode])
 
+  // === NOVA PALETA DE CORES PREMIUM ===
   const tema = {
-    fundoMain: isDarkMode ? '#0f172a' : '#eef2f5',
+    fundoMain: isDarkMode ? '#09090b' : '#f1f5f9', // Deep black super elegante
     fundoCard: isDarkMode ? '#1e293b' : '#ffffff',
-    texto1: isDarkMode ? '#f8fafc' : '#333333',
+    texto1: isDarkMode ? '#f8fafc' : '#0f172a',
     texto2: isDarkMode ? '#94a3b8' : '#64748b',
-    borda: isDarkMode ? '#334155' : '#e2e8f0',
-    inputBg: isDarkMode ? '#0f172a' : '#ffffff',
-    fundoDestaque: isDarkMode ? '#334155' : '#f8fafc',
-    graficoTexto: isDarkMode ? '#cbd5e1' : '#475569'
+    borda: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)', // Borda super sutil
+    inputBg: isDarkMode ? '#0f172a' : '#f8fafc',
+    fundoDestaque: isDarkMode ? '#0f172a' : '#f8fafc',
+    graficoTexto: isDarkMode ? '#cbd5e1' : '#475569',
+    gradientePrimary: 'linear-gradient(to right, #32b8f7, #2563eb)' // Gradiente da marca
   }
 
   const handleLogin = (e) => {
@@ -383,7 +385,7 @@ function App() {
   }
 
   return (
-    <div className="main-wrapper" style={{ minHeight: '100vh', backgroundColor: tema.fundoMain, padding: '20px', transition: 'background-color 0.3s' }}>
+    <div className="main-wrapper" style={{ minHeight: '100vh', backgroundColor: tema.fundoMain, padding: '20px', transition: 'background-color 0.5s ease' }}>
       <Toaster theme={isDarkMode ? 'dark' : 'light'} richColors position="top-center" offset="80px" duration={5000} expand={true} />
       
       <style>{`
@@ -400,6 +402,23 @@ function App() {
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
         .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 
+        /* === CLASSES PREMIUM GLOBAIS === */
+        .glass-panel {
+          background: ${isDarkMode ? 'rgba(30, 41, 59, 0.65)' : 'rgba(255, 255, 255, 0.7)'};
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border: 1px solid ${tema.borda};
+          box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+        }
+        
+        .btn-premium {
+          transition: all 0.3s ease;
+        }
+        .btn-premium:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 15px rgba(50, 184, 247, 0.3);
+        }
+
         @media (max-width: 768px) {
           .hide-on-mobile { display: none !important; }
           .main-wrapper { padding: 10px !important; }
@@ -415,7 +434,7 @@ function App() {
           tema={tema} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} 
           abaAtiva={abaAtiva} setAbaAtiva={setAbaAtiva} isStaff={isStaff} 
           limparFormularioUsuario={limparFormularioUsuario} handleLogout={handleLogout} 
-          notificacoesPendentes={notificacoesPendentes} // === ENVIANDO O CONTADOR ===
+          notificacoesPendentes={notificacoesPendentes} 
         />
 
         {abaAtiva === 'novo' && (
