@@ -1,109 +1,189 @@
-import React from 'react';
-import { Edit, Check, Ticket } from 'lucide-react';
+import React, { useState } from 'react';
+import { Save, X, Building2, User, Calendar, List, Activity, Users, FileText, MessageSquare, Ticket } from 'lucide-react';
 
 const NovoAtendimento = ({
-  tema, isDarkMode, editandoId, handleSubmit, usuarios, atendentesSelecionados,
-  handleToggleAtendente, empresa, setEmpresa, empresasUnicas, funcionario,
-  setFuncionario, funcionariosDaEmpresa, categoria, setCategoria, status,
-  setStatus, dataAtendimento, setDataAtendimento, isTicket, setIsTicket,
-  solitProb, setSolitProb, resolucao, setResolucao, obs, setObs,
+  tema, isDarkMode, editandoId, handleSubmit, usuarios, atendentesSelecionados, handleToggleAtendente,
+  empresa, setEmpresa, empresasUnicas, funcionario, setFuncionario, funcionariosDaEmpresa,
+  categoria, setCategoria, status, setStatus, dataAtendimento, setDataAtendimento,
+  isTicket, setIsTicket, solitProb, setSolitProb, resolucao, setResolucao, obs, setObs,
   limparFormulario, setAbaAtiva
 }) => {
+
+  // === ESTADOS DO NOSSO AUTOCOMPLETAR CUSTOMIZADO ===
+  const [showSugestoesEmpresa, setShowSugestoesEmpresa] = useState(false);
+  const [showSugestoesFuncionario, setShowSugestoesFuncionario] = useState(false);
+
+  // Filtra as sugestões conforme o usuário digita
+  const empresasFiltradas = empresasUnicas.filter(e => e && e.toLowerCase().includes(empresa.toLowerCase()) && e !== empresa);
+  const funcionariosFiltrados = funcionariosDaEmpresa.filter(f => f && f.toLowerCase().includes(funcionario.toLowerCase()) && f !== funcionario);
+
+  const inputStyle = {
+    width: '100%', padding: '12px 14px', borderRadius: '10px', border: `1px solid ${tema.borda}`, 
+    backgroundColor: isDarkMode ? 'rgba(0,0,0,0.2)' : '#fff', color: tema.texto1, 
+    fontSize: '14px', outline: 'none', transition: '0.2s', boxSizing: 'border-box'
+  };
+
+  const labelStyle = { display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', color: tema.texto1, marginBottom: '8px' };
+
+  // Estilo da nossa caixinha flutuante do dropdown
+  const dropdownStyle = {
+    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, 
+    backgroundColor: isDarkMode ? '#1e293b' : '#fff', 
+    border: `1px solid ${tema.borda}`, borderRadius: '10px', 
+    maxHeight: '180px', overflowY: 'auto', margin: '4px 0 0 0', padding: 0, 
+    listStyle: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+  };
+
   return (
-    <div style={{ backgroundColor: editandoId ? (isDarkMode ? '#b45309' : '#fffbeb') : (isDarkMode ? '#1e293b' : '#ffffff'), padding: '30px', borderRadius: '12px', transition: '0.3s', border: `1px solid ${editandoId ? '#f59e0b' : tema.borda}`, boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-      <h2 style={{ color: editandoId ? '#d97706' : tema.texto1, marginTop: '0', marginBottom: '25px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        {editandoId ? <><Edit size={24} /> Editando Relatório</> : <><Edit size={24} /> Novo Atendimento</>}
-      </h2>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+    <div className="glass-panel" style={{ padding: '30px', borderRadius: '16px', animation: 'fadeIn 0.4s ease' }}>
+      
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `2px solid ${isDarkMode ? 'rgba(50, 184, 247, 0.4)' : '#32b8f7'}`, paddingBottom: '15px', marginBottom: '25px' }}>
+        <h2 style={{ color: tema.texto1, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {editandoId ? <><Edit size={24} color="#32b8f7"/> Editando Relatório #{editandoId}</> : <><FileText size={24} color="#32b8f7"/> Registrar Novo Atendimento</>}
+        </h2>
+      </div>
 
-        <div style={{ backgroundColor: tema.inputBg, padding: '15px', borderRadius: '8px', border: `1px solid ${tema.borda}` }}>
-          <label style={{ display: 'block', color: tema.texto2, fontWeight: '600', marginBottom: '12px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Equipe no atendimento
-          </label>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {usuarios.map(user => {
-              const isSelected = atendentesSelecionados.includes(user.id);
-              return (
-                <button
-                  key={user.id} type="button" onClick={() => handleToggleAtendente(user.id)}
-                  style={{ padding: '8px 14px', borderRadius: '20px', border: isSelected ? 'none' : `1px solid ${tema.borda}`, backgroundColor: isSelected ? '#32b8f7' : (isDarkMode ? '#0f172a' : '#f8fafc'), color: isSelected ? '#fff' : tema.texto1, cursor: 'pointer', fontWeight: isSelected ? '600' : '400', transition: 'all 0.2s', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '5px' }}
-                >
-                  {isSelected ? <Check size={14} /> : ''} {user.username}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: '200px' }}>
-            <input list="lista-empresas" placeholder="Nome da Empresa" required value={empresa} onChange={(e) => setEmpresa(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '8px', border: `1px solid ${tema.borda}`, fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1, transition: '0.2s' }} />
-            <datalist id="lista-empresas">{empresasUnicas.map((emp, i) => <option key={i} value={emp} />)}</datalist>
-          </div>
-          <div style={{ flex: 1, minWidth: '200px' }}>
-            <input list="lista-funcionarios" placeholder="Nome do Funcionário (Opcional)" value={funcionario} onChange={(e) => setFuncionario(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '8px', border: `1px solid ${tema.borda}`, fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1, transition: '0.2s' }} />
-            <datalist id="lista-funcionarios">{funcionariosDaEmpresa.map((func, i) => <option key={i} value={func} />)}</datalist>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: '200px' }}>
-            <select value={categoria} onChange={(e) => setCategoria(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '8px', border: `1px solid ${tema.borda}`, fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1, outlineColor: '#32b8f7' }}>
-              <option value="Hardware / Equipamento">🖥️ Hardware / Equipamento</option>
-              <option value="Sistema Operacional / Windows">🪟 Sistema Operacional / Windows</option>
-              <option value="Rede Interna / Servidor">🖧 Rede Interna / Servidor</option>
-              <option value="Internet / Wi-Fi">🌐 Internet / Wi-Fi</option>
-              <option value="Sistemas / ERP">⚙️ Sistemas / ERP</option>
-              <option value="Pacote Office / Softwares">📝 Pacote Office / Softwares</option>
-              <option value="E-mail / Acessos">📧 E-mail / Acessos</option>
-              <option value="Acessos / Permissões / VPN">🔑 Acessos / Permissões / VPN</option>
-              <option value="Telefonia">📞 Telefonia</option>
-              <option value="Dispositivos Móveis / Celular">📱 Dispositivos Móveis / Celular</option>
-              <option value="Segurança / Antivírus">🛡️ Segurança / Antivírus</option>
-              <option value="Backup / Restauração">💾 Backup / Restauração</option>
-              <option value="Certificados Digitais">🔐 Certificados Digitais</option>
-              <option value="Controle de Ponto / Biometria">🕒 Controle de Ponto / Biometria</option>
-              <option value="CFTV / Câmeras">📹 CFTV / Câmeras</option>
-              <option value="Impressora">🖨️ Impressora</option>
-              <option value="Periféricos (Mouse/Teclado/Fone)">🔌 Periféricos (Mouse/Teclado/Fone)</option>
-              <option value="Dúvida de Usuário">❓ Dúvida de Usuário</option>
-              <option value="Outros">🔧 Outros</option>
-            </select>
-          </div>
-          <div style={{ flex: 1, minWidth: '200px' }}>
-            <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '8px', border: `1px solid ${tema.borda}`, fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1, outlineColor: '#32b8f7' }}>
-              <option value="Resolvido">🟢 Resolvido (Finalizado)</option>
-              <option value="Andamento">🟡 Em Andamento (Pendente)</option>
-              <option value="Aberto">🔴 Aberto (Não iniciado)</option>
-            </select>
-          </div>
-          <div style={{ flex: 1, minWidth: '150px' }}>
-            <input type="date" required value={dataAtendimento} onChange={(e) => setDataAtendimento(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '8px', border: `1px solid ${tema.borda}`, fontSize: '15px', boxSizing: 'border-box', backgroundColor: tema.inputBg, color: tema.texto1, outlineColor: '#32b8f7' }} title="Data em que o serviço foi realizado" />
-          </div>
-        </div>
-
-        <div onClick={() => setIsTicket(!isTicket)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '16px', backgroundColor: isTicket ? (isDarkMode ? '#4c0519' : '#ffe4e6') : tema.inputBg, borderRadius: '8px', border: `2px dashed ${isTicket ? '#f43f5e' : tema.borda}`, cursor: 'pointer', transition: '0.3s' }}>
-          <input type="checkbox" checked={isTicket} readOnly style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#f43f5e' }} />
-          <span style={{ color: isTicket ? '#f43f5e' : tema.texto1, fontWeight: isTicket ? '600' : '400', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Ticket size={18} /> Marcar como Ticket Especial (Problemas Complexos)
-          </span>
-        </div>
-
-        <textarea placeholder="Solicitação / Problema Relatado" required value={solitProb} onChange={(e) => setSolitProb(e.target.value)} style={{ padding: '15px', borderRadius: '8px', border: `1px solid ${tema.borda}`, minHeight: '80px', fontSize: '15px', resize: 'vertical', backgroundColor: tema.inputBg, color: tema.texto1, transition: '0.2s', fontFamily: 'inherit' }} />
-        <textarea placeholder="Resolução / O que foi feito" required value={resolucao} onChange={(e) => setResolucao(e.target.value)} style={{ padding: '15px', borderRadius: '8px', border: `1px solid ${tema.borda}`, minHeight: '80px', fontSize: '15px', resize: 'vertical', backgroundColor: tema.inputBg, color: tema.texto1, transition: '0.2s', fontFamily: 'inherit' }} />
-        <textarea placeholder="Observações Adicionais (Opcional)" value={obs} onChange={(e) => setObs(e.target.value)} style={{ padding: '15px', borderRadius: '8px', border: `1px solid ${tema.borda}`, minHeight: '50px', fontSize: '15px', resize: 'vertical', backgroundColor: tema.inputBg, color: tema.texto1, transition: '0.2s', fontFamily: 'inherit' }} />
-
-        <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-          <button type="submit" style={{ flex: 1, padding: '16px', backgroundColor: editandoId ? '#d97706' : '#32b8f7', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '16px', transition: '0.2s', boxShadow: editandoId ? '0 4px 10px rgba(217, 119, 6, 0.3)' : '0 4px 10px rgba(50, 184, 247, 0.3)' }}>
-            {editandoId ? 'Salvar Alterações' : 'Salvar Atendimento'}
-          </button>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        
+        {/* LINHA 1: Empresa, Funcionário e Data */}
+        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
           
-          {editandoId ? (
-            <button type="button" onClick={() => { limparFormulario(); setAbaAtiva('historico'); }} style={{ padding: '16px', backgroundColor: '#e2e8f0', color: '#475569', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '16px', transition: '0.2s' }}>Cancelar</button>
-          ) : (
-            <button type="button" onClick={limparFormulario} style={{ padding: '16px', backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', color: isDarkMode ? '#cbd5e1' : '#475569', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '16px', transition: '0.2s' }} title="Limpar rascunho">🗑️ Limpar</button>
-          )}
+          {/* CAMPO EMPRESA COM DROP CUSTOMIZADO */}
+          <div style={{ flex: 2, minWidth: '250px', position: 'relative' }}>
+            <label style={labelStyle}><Building2 size={16} color={tema.texto2}/> Empresa / Cliente *</label>
+            <input 
+              type="text" required placeholder="Digite o nome da empresa..." value={empresa}
+              onChange={(e) => { setEmpresa(e.target.value); setShowSugestoesEmpresa(true); }}
+              onFocus={() => setShowSugestoesEmpresa(true)}
+              // O setTimeout garante que o clique na lista funcione antes de fechar
+              onBlur={() => setTimeout(() => setShowSugestoesEmpresa(false), 200)} 
+              style={inputStyle} onFocusCapture={(e) => e.target.style.borderColor = '#32b8f7'} onBlurCapture={(e) => e.target.style.borderColor = tema.borda}
+            />
+            {showSugestoesEmpresa && empresasFiltradas.length > 0 && (
+              <ul style={dropdownStyle}>
+                {empresasFiltradas.map((emp, i) => (
+                  <li key={i} onClick={() => { setEmpresa(emp); setShowSugestoesEmpresa(false); }}
+                      style={{ padding: '12px 15px', cursor: 'pointer', color: tema.texto1, borderBottom: `1px solid ${tema.borda}`, transition: '0.2s' }}
+                      onMouseOver={(e) => e.target.style.backgroundColor = isDarkMode ? 'rgba(50, 184, 247, 0.15)' : '#f1f5f9'}
+                      onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}>
+                    {emp}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* CAMPO FUNCIONÁRIO COM DROP CUSTOMIZADO */}
+          <div style={{ flex: 2, minWidth: '200px', position: 'relative' }}>
+            <label style={labelStyle}><User size={16} color={tema.texto2}/> Funcionário (Opcional)</label>
+            <input 
+              type="text" placeholder="Quem solicitou?" value={funcionario}
+              onChange={(e) => { setFuncionario(e.target.value); setShowSugestoesFuncionario(true); }}
+              onFocus={() => setShowSugestoesFuncionario(true)}
+              onBlur={() => setTimeout(() => setShowSugestoesFuncionario(false), 200)}
+              style={inputStyle} onFocusCapture={(e) => e.target.style.borderColor = '#32b8f7'} onBlurCapture={(e) => e.target.style.borderColor = tema.borda}
+            />
+            {showSugestoesFuncionario && funcionariosFiltrados.length > 0 && (
+              <ul style={dropdownStyle}>
+                {funcionariosFiltrados.map((func, i) => (
+                  <li key={i} onClick={() => { setFuncionario(func); setShowSugestoesFuncionario(false); }}
+                      style={{ padding: '12px 15px', cursor: 'pointer', color: tema.texto1, borderBottom: `1px solid ${tema.borda}`, transition: '0.2s' }}
+                      onMouseOver={(e) => e.target.style.backgroundColor = isDarkMode ? 'rgba(50, 184, 247, 0.15)' : '#f1f5f9'}
+                      onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}>
+                    {func}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div style={{ flex: 1, minWidth: '150px' }}>
+            <label style={labelStyle}><Calendar size={16} color={tema.texto2}/> Data *</label>
+            <input type="date" required value={dataAtendimento} onChange={e => setDataAtendimento(e.target.value)} style={inputStyle} />
+          </div>
         </div>
+
+        {/* LINHA 2: Categoria, Status e Toggle Ticket */}
+        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.1)' : '#f8fafc', padding: '20px', borderRadius: '12px', border: `1px solid ${tema.borda}` }}>
+          
+          <div style={{ flex: 1, minWidth: '180px' }}>
+            <label style={labelStyle}><List size={16} color={tema.texto2}/> Categoria</label>
+            <select value={categoria} onChange={e => setCategoria(e.target.value)} style={inputStyle}>
+              <option value="Hardware / Equipamento">Hardware / Equipamento</option>
+              <option value="Sistema Operacional / Windows">Sistema Operacional / Windows</option>
+              <option value="Rede Interna / Servidor">Rede Interna / Servidor</option>
+              <option value="Internet / Wi-Fi">Internet / Wi-Fi</option>
+              <option value="Sistemas / ERP">Sistemas / ERP</option>
+              <option value="Pacote Office / Softwares">Pacote Office / Softwares</option>
+              <option value="Impressora">Impressora</option>
+              <option value="Dúvida / Treinamento">Dúvida / Treinamento</option>
+              <option value="Outros">Outros</option>
+            </select>
+          </div>
+
+          <div style={{ flex: 1, minWidth: '150px' }}>
+            <label style={labelStyle}><Activity size={16} color={tema.texto2}/> Status</label>
+            <select value={status} onChange={e => setStatus(e.target.value)} style={{...inputStyle, fontWeight: 'bold', color: status === 'Resolvido' ? '#10b981' : status === 'Andamento' ? '#eab308' : '#ef4444'}}>
+              <option value="Resolvido">🟢 Resolvido</option>
+              <option value="Andamento">🟡 Em Andamento</option>
+              <option value="Aberto">🔴 Aberto</option>
+            </select>
+          </div>
+
+          {/* Toggle de Ticket Bonitão */}
+          <div style={{ flex: 1, minWidth: '150px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start' }}>
+            <label style={labelStyle}><Ticket size={16} color={tema.texto2}/> Gerar Ticket Kanban?</label>
+            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '10px' }}>
+              <div style={{ position: 'relative', width: '44px', height: '24px', backgroundColor: isTicket ? '#f43f5e' : (isDarkMode ? '#334155' : '#cbd5e1'), borderRadius: '24px', transition: '0.3s' }}>
+                <div style={{ position: 'absolute', top: '2px', left: isTicket ? '22px' : '2px', width: '20px', height: '20px', backgroundColor: '#fff', borderRadius: '50%', transition: '0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}></div>
+              </div>
+              <input type="checkbox" checked={isTicket} onChange={e => setIsTicket(e.target.checked)} style={{ display: 'none' }} />
+              <span style={{ fontSize: '14px', fontWeight: 'bold', color: isTicket ? '#f43f5e' : tema.texto2 }}>{isTicket ? 'SIM (Acompanhar)' : 'NÃO'}</span>
+            </label>
+          </div>
+        </div>
+
+        {/* LINHA 3: Equipe (Checkboxes) */}
+        <div>
+          <label style={labelStyle}><Users size={16} color={tema.texto2}/> Equipe Responsável *</label>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', padding: '15px', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.1)' : '#f8fafc', borderRadius: '10px', border: `1px solid ${tema.borda}` }}>
+            {usuarios.filter(u => u.is_active).map(user => (
+              <label key={user.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', backgroundColor: atendentesSelecionados.includes(user.id) ? (isDarkMode ? 'rgba(50, 184, 247, 0.15)' : '#e0f2fe') : (isDarkMode ? '#1e293b' : '#fff'), padding: '6px 12px', borderRadius: '20px', border: `1px solid ${atendentesSelecionados.includes(user.id) ? '#32b8f7' : tema.borda}`, transition: '0.2s', fontSize: '13px', fontWeight: atendentesSelecionados.includes(user.id) ? 'bold' : 'normal', color: atendentesSelecionados.includes(user.id) ? '#32b8f7' : tema.texto1 }}>
+                <input type="checkbox" checked={atendentesSelecionados.includes(user.id)} onChange={() => handleToggleAtendente(user.id)} style={{ accentColor: '#32b8f7' }} />
+                {user.username}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* TEXTAREAS */}
+        <div>
+          <label style={labelStyle}><MessageSquare size={16} color={tema.texto2}/> Problema Relatado *</label>
+          <textarea required placeholder="Descreva o que o cliente relatou..." value={solitProb} onChange={e => setSolitProb(e.target.value)} rows="3" style={{...inputStyle, resize: 'vertical'}} />
+        </div>
+
+        <div>
+          <label style={labelStyle}><MessageSquare size={16} color={tema.texto2}/> Resolução / Procedimento Adotado *</label>
+          <textarea required placeholder="Como foi resolvido ou qual o próximo passo?" value={resolucao} onChange={e => setResolucao(e.target.value)} rows="4" style={{...inputStyle, resize: 'vertical'}} />
+        </div>
+
+        <div>
+          <label style={{...labelStyle, color: tema.texto2}}>Observações Internas (Opcional)</label>
+          <input type="text" placeholder="Algum detalhe extra?" value={obs} onChange={e => setObs(e.target.value)} style={inputStyle} />
+        </div>
+
+        {/* BOTÕES */}
+        <div style={{ display: 'flex', gap: '15px', justifyContent: 'flex-end', marginTop: '10px' }}>
+          {editandoId && (
+            <button type="button" onClick={() => { limparFormulario(); setAbaAtiva('historico'); }} style={{ padding: '12px 24px', backgroundColor: 'transparent', color: tema.texto2, border: `1px solid ${tema.borda}`, borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}>
+              Cancelar Edição
+            </button>
+          )}
+          <button type="submit" className="btn-premium" style={{ padding: '12px 30px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Save size={18} /> {editandoId ? 'Atualizar Atendimento' : 'Salvar Atendimento'}
+          </button>
+        </div>
+
       </form>
     </div>
   );
