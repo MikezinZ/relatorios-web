@@ -60,7 +60,7 @@ const RadarTickets = ({
     <div className="glass-panel" style={{ padding: '30px', borderRadius: '16px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `2px solid ${isDarkMode ? 'rgba(244, 63, 94, 0.4)' : '#f43f5e'}`, paddingBottom: '15px', marginBottom: '25px', flexWrap: 'wrap', gap: '15px' }}>
         <h2 style={{ color: tema.texto1, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Ticket size={24} color="#f43f5e" /> Quadro Kanban
+          <Ticket size={24} color="#f43f5e" /> Quadro de Tickets
         </h2>
       </div>
 
