@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Save, X, Building2, User, Calendar, List, Activity, Users, FileText, MessageSquare, Ticket } from 'lucide-react';
+import { Edit, Save, X, Building2, User, Calendar, List, Activity, Users, FileText, MessageSquare, Ticket } from 'lucide-react';
 
 const NovoAtendimento = ({
   tema, isDarkMode, editandoId, handleSubmit, usuarios, atendentesSelecionados, handleToggleAtendente,
