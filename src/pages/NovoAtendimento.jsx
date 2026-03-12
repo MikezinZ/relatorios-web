@@ -39,7 +39,7 @@ const NovoAtendimento = ({
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `2px solid ${isDarkMode ? 'rgba(50, 184, 247, 0.4)' : '#32b8f7'}`, paddingBottom: '15px', marginBottom: '25px' }}>
         <h2 style={{ color: tema.texto1, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {editandoId ? <><Edit size={24} color="#32b8f7"/> Editando Relatório #{editandoId}</> : <><FileText size={24} color="#32b8f7"/> Registrar Novo Atendimento</>}
+          {editandoId ? <><Edit size={24} color="#32b8f7"/> Editando Relatório #{editandoId}</> : <><FileText size={24} color="#32b8f7"/>Novo Atendimento</>}
         </h2>
       </div>
 
@@ -132,7 +132,7 @@ const NovoAtendimento = ({
 
           {/* Toggle de Ticket Bonitão */}
           <div style={{ flex: 1, minWidth: '150px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start' }}>
-            <label style={labelStyle}><Ticket size={16} color={tema.texto2}/> Gerar Ticket Kanban?</label>
+            <label style={labelStyle}><Ticket size={16} color={tema.texto2}/> Gerar Ticket?</label>
             <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '10px' }}>
               <div style={{ position: 'relative', width: '44px', height: '24px', backgroundColor: isTicket ? '#f43f5e' : (isDarkMode ? '#334155' : '#cbd5e1'), borderRadius: '24px', transition: '0.3s' }}>
                 <div style={{ position: 'absolute', top: '2px', left: isTicket ? '22px' : '2px', width: '20px', height: '20px', backgroundColor: '#fff', borderRadius: '50%', transition: '0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}></div>
