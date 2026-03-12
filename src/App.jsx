@@ -445,7 +445,7 @@ function App() {
         }
       `}</style>
 
-      <div style={{ maxWidth: abaAtiva === 'tickets' ? '98%' : '1000px', margin: '0 auto', transition: 'max-width 0.4s ease' }}>
+      <div style={{ maxWidth: (abaAtiva === 'tickets' || abaAtiva === 'gestao') ? '98%' : '1000px', margin: '0 auto', transition: 'max-width 0.4s ease' }}>
         
         <MenuSuperior 
           tema={tema} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} 
