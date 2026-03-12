@@ -46,9 +46,17 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
 
   let badgeSLA = null;
   if (relatorio.status !== 'Resolvido') {
+    // 1. Pega apenas a data (AAAA-MM-DD), ignorando a hora em que foi aberto
+    const dataString = relatorio.data_atendimento || relatorio.criado_em.split('T')[0];
+    const [ano, mes, dia] = dataString.split('-');
+    
+    // 2. Cria as datas "zeradas" (meia-noite) para forçar a comparação pelo calendário
+    const dataCriacao = new Date(ano, mes - 1, dia);
     const hoje = new Date();
-    const dataCriacao = new Date(relatorio.criado_em || relatorio.data_atendimento);
-    const diffTime = Math.abs(hoje - dataCriacao);
+    const dataHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+    
+    // 3. Calcula a diferença real de dias no calendário
+    const diffTime = dataHoje.getTime() - dataCriacao.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     
     let corSlaBg = isDarkMode ? 'rgba(51, 65, 85, 0.4)' : '#f1f5f9';
@@ -56,8 +64,17 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
     let textoSla = 'Aberto hoje';
     let piscar = false;
 
-    if (diffDays === 1) { corSlaBg = isDarkMode ? 'rgba(234, 179, 8, 0.15)' : '#fef08a'; corSlaTxt = isDarkMode ? '#fde047' : '#854d0e'; textoSla = 'Aberto há 1 dia'; } 
-    else if (diffDays >= 2) { corSlaBg = isDarkMode ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2'; corSlaTxt = isDarkMode ? '#fca5a5' : '#991b1b'; textoSla = `Atrasado: ${diffDays} dias`; piscar = true; }
+    if (diffDays === 1) { 
+      corSlaBg = isDarkMode ? 'rgba(234, 179, 8, 0.15)' : '#fef08a'; 
+      corSlaTxt = isDarkMode ? '#fde047' : '#854d0e'; 
+      textoSla = 'Aberto há 1 dia'; 
+    } 
+    else if (diffDays >= 2) { 
+      corSlaBg = isDarkMode ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2'; 
+      corSlaTxt = isDarkMode ? '#fca5a5' : '#991b1b'; 
+      textoSla = `Atrasado: ${diffDays} dias`; 
+      piscar = true; 
+    }
 
     badgeSLA = (
       <span className={piscar ? "animate-pulse" : ""} style={{ fontSize: '11px', backgroundColor: corSlaBg, color: corSlaTxt, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px', border: piscar ? '1px solid rgba(239, 68, 68, 0.5)' : `1px solid ${tema.borda}` }}>
