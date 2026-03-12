@@ -1,5 +1,5 @@
-import React from 'react';
-import { Users, BarChart3, TrendingUp, ShieldCheck, UserPlus, Edit, Trash2, CheckCircle2, AlertCircle, Clock3 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Users, BarChart3, TrendingUp, ShieldCheck, UserPlus, Edit, Trash2, CheckCircle2, AlertCircle, Clock3, CalendarDays } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, CartesianGrid } from 'recharts';
 
 const DashboardGestao = ({
@@ -11,8 +11,51 @@ const DashboardGestao = ({
   limparFormularioUsuario, animationParent, usuarios, iniciarEdicaoUsuario, apagarUsuario
 }) => {
 
-  // === CALCULANDO NOVOS DASHBOARDS ===
-  
+  // === NOVO ESTADO: Controle do período do Gráfico de Evolução ===
+  const [periodoEvolucao, setPeriodoEvolucao] = useState('semanal');
+
+  // === CALCULANDO DADOS DO GRÁFICO DINÂMICO ===
+  const dadosEvolucao = useMemo(() => {
+    let dataMap = {};
+    let labelsOrdenadas = [];
+    const hoje = new Date();
+
+    if (periodoEvolucao === 'semanal' || periodoEvolucao === 'mensal') {
+      const dias = periodoEvolucao === 'semanal' ? 7 : 30;
+      for (let i = dias - 1; i >= 0; i--) {
+        let d = new Date(); d.setDate(d.getDate() - i);
+        let dateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
+        let label = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+        dataMap[dateStr] = { label, count: 0 };
+        labelsOrdenadas.push(dateStr);
+      }
+    } else {
+      const meses = periodoEvolucao === 'semestral' ? 6 : 12;
+      for (let i = meses - 1; i >= 0; i--) {
+        let d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+        let monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
+        let label = d.toLocaleString('pt-BR', { month: 'short' }).toUpperCase();
+        dataMap[monthStr] = { label, count: 0 };
+        labelsOrdenadas.push(monthStr);
+      }
+    }
+
+    // Preenchendo com os chamados reais
+    relatorios.forEach(r => {
+      const dataAtend = r.data_atendimento || r.criado_em?.split('T')[0];
+      if (!dataAtend) return;
+
+      if (periodoEvolucao === 'semanal' || periodoEvolucao === 'mensal') {
+        if (dataMap[dataAtend]) dataMap[dataAtend].count++;
+      } else {
+        const monthStr = dataAtend.substring(0, 7);
+        if (dataMap[monthStr]) dataMap[monthStr].count++;
+      }
+    });
+
+    return labelsOrdenadas.map(key => ({ data: dataMap[key].label, Chamados: dataMap[key].count }));
+  }, [relatorios, periodoEvolucao]);
+
   // 1. Produtividade por Atendente
   const contagemAtendentes = relatorios.reduce((acc, rel) => {
     const nome = rel.atendente_nome || 'Desconhecido';
@@ -22,19 +65,6 @@ const DashboardGestao = ({
   const dadosProdutividade = Object.keys(contagemAtendentes)
     .map(key => ({ nome: key, total: contagemAtendentes[key] }))
     .sort((a, b) => b.total - a.total);
-
-  // 2. Evolução de Chamados (Últimos 7 dias)
-  const ultimos7Dias = [...Array(7)].map((_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    return d.toISOString().split('T')[0];
-  }).reverse();
-
-  const dadosEvolucao = ultimos7Dias.map(dia => {
-    const totalDia = relatorios.filter(r => (r.data_atendimento || r.criado_em?.split('T')[0]) === dia).length;
-    const [, mes, dataDia] = dia.split('-');
-    return { data: `${dataDia}/${mes}`, Chamados: totalDia };
-  });
 
   // KPI's do Topo
   const totalGeral = relatorios.length;
@@ -78,9 +108,28 @@ const DashboardGestao = ({
       {/* === LINHA 2: GRÁFICOS PRINCIPAIS === */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '20px' }}>
         
-        {/* GRÁFICO 1: EVOLUÇÃO 7 DIAS */}
+        {/* GRÁFICO 1: EVOLUÇÃO (AGORA COM FILTRO DINÂMICO!) */}
         <div className="glass-panel" style={{ padding: '20px', borderRadius: '16px' }}>
-          <h4 style={{ margin: '0 0 20px 0', color: tema.texto1, display: 'flex', alignItems: 'center', gap: '8px' }}><TrendingUp size={18} color="#3b82f6"/> Volume de Chamados (7 Dias)</h4>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+            <h4 style={{ margin: 0, color: tema.texto1, display: 'flex', alignItems: 'center', gap: '8px' }}><TrendingUp size={18} color="#3b82f6"/> Volume de Chamados</h4>
+            
+            {/* O NOVO SELECT DO FILTRO */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.2)' : '#f1f5f9', padding: '4px 8px', borderRadius: '8px', border: `1px solid ${tema.borda}` }}>
+              <CalendarDays size={14} color={tema.texto2} />
+              <select 
+                value={periodoEvolucao} 
+                onChange={e => setPeriodoEvolucao(e.target.value)} 
+                style={{ background: 'transparent', border: 'none', color: tema.texto1, fontSize: '12px', fontWeight: 'bold', outline: 'none', cursor: 'pointer' }}
+              >
+                <option value="semanal">Últimos 7 dias</option>
+                <option value="mensal">Últimos 30 dias</option>
+                <option value="semestral">Últimos 6 meses</option>
+                <option value="anual">Últimos 12 meses</option>
+              </select>
+            </div>
+          </div>
+
           <ResponsiveContainer width="100%" height={250}>
             <AreaChart data={dadosEvolucao} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
@@ -90,7 +139,8 @@ const DashboardGestao = ({
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke={tema.borda} vertical={false} />
-              <XAxis dataKey="data" stroke={tema.texto2} fontSize={12} tickLine={false} />
+              {/* Se for 30 dias, a gente inclina o texto pra não encavalar */}
+              <XAxis dataKey="data" stroke={tema.texto2} fontSize={10} tickLine={false} tick={periodoEvolucao === 'mensal' ? { angle: -45, textAnchor: 'end', dy: 10 } : true} height={periodoEvolucao === 'mensal' ? 40 : 20}/>
               <YAxis stroke={tema.texto2} fontSize={12} tickLine={false} axisLine={false} />
               <Tooltip contentStyle={tooltipStyle} />
               <Area type="monotone" dataKey="Chamados" stroke="#32b8f7" strokeWidth={3} fillOpacity={1} fill="url(#colorChamados)" />
@@ -100,7 +150,7 @@ const DashboardGestao = ({
 
         {/* GRÁFICO 2: STATUS */}
         <div className="glass-panel" style={{ padding: '20px', borderRadius: '16px' }}>
-          <h4 style={{ margin: '0 0 20px 0', color: tema.texto1 }}>Situação dos Chamados</h4>
+          <h4 style={{ margin: '0 0 20px 0', color: tema.texto1 }}>Situação Geral</h4>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie data={dadosGraficoStatus} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} style={{ fontSize: '12px', fill: tema.texto1 }}>
@@ -166,7 +216,6 @@ const DashboardGestao = ({
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' }}>
           
-          {/* FORMULÁRIO DE USUÁRIO */}
           <div style={{ backgroundColor: isDarkMode ? 'rgba(0,0,0,0.2)' : '#f8fafc', padding: '20px', borderRadius: '12px', border: `1px solid ${tema.borda}` }}>
             <h4 style={{ margin: '0 0 15px 0', color: tema.texto1 }}>{editandoUsuarioId ? 'Editar Colaborador' : 'Novo Colaborador'}</h4>
             <form onSubmit={handleSalvarUsuario} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -176,7 +225,7 @@ const DashboardGestao = ({
               <div style={{ display: 'flex', gap: '15px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: tema.texto1, fontSize: '14px', cursor: 'pointer' }}>
                   <input type="checkbox" checked={novoIsStaff} onChange={e => setNovoIsStaff(e.target.checked)} style={{ width: '16px', height: '16px', accentColor: '#10b981' }} />
-                  É Administrador? (Chefe)
+                  Administrador?
                 </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: tema.texto1, fontSize: '14px', cursor: 'pointer' }}>
                   <input type="checkbox" checked={novoIsActive} onChange={e => setNovoIsActive(e.target.checked)} style={{ width: '16px', height: '16px', accentColor: '#3b82f6' }} />
@@ -195,7 +244,6 @@ const DashboardGestao = ({
             </form>
           </div>
 
-          {/* LISTA DE USUÁRIOS */}
           <div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {usuarios.map(user => (
