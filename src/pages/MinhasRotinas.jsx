@@ -43,10 +43,19 @@ const MinhasRotinas = ({ tema, isDarkMode, token, tarefas, buscarTarefas, isStaf
   };
 
   const apagarTarefa = (id) => {
-    if (window.confirm("Deseja apagar essa rotina permanentemente?")) {
-      axios.delete(`https://api-ti-relatorios.onrender.com/api/tarefas/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
-        .then(() => { toast.success("Rotina apagada!"); buscarTarefas(filtroChefia); });
-    }
+    toast('Excluir Rotina', {
+      description: 'Tem certeza que deseja apagar essa rotina permanentemente?',
+      action: {
+        label: 'Sim, Excluir',
+        onClick: () => {
+          axios.delete(`https://api-ti-relatorios.onrender.com/api/tarefas/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(() => { toast.success("Rotina apagada!"); buscarTarefas(filtroChefia); })
+            .catch(() => toast.error("Erro ao apagar rotina."));
+        }
+      },
+      cancel: { label: 'Cancelar' },
+      duration: 8000,
+    });
   };
 
   // === AÇÕES DO CHECKLIST (SUB-TAREFAS) ===
