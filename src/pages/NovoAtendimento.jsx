@@ -104,9 +104,12 @@ const NovoAtendimento = ({
         </div>
 
         {/* LINHA 2: Categoria, Status e Toggle Ticket */}
+        {/* LINHA 2: Categoria, Status e Toggle Ticket */}
         <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.1)' : '#f8fafc', padding: '20px', borderRadius: '12px', border: `1px solid ${tema.borda}` }}>
           
-          <select value={categoria} onChange={e => setCategoria(e.target.value)} style={inputStyle}>
+          <div style={{ flex: 1, minWidth: '200px' }}>
+            <label style={labelStyle}><List size={16} color={tema.texto2}/> Categoria</label>
+            <select value={categoria} onChange={e => setCategoria(e.target.value)} style={inputStyle}>
               <option value="Hardware / Equipamento">Hardware / Equipamento</option>
               <option value="Sistema Operacional / Windows">Sistema Operacional / Windows</option>
               <option value="Rede Interna / Servidor">Rede Interna / Servidor</option>
@@ -127,6 +130,7 @@ const NovoAtendimento = ({
               <option value="Dúvida / Treinamento">Dúvida / Treinamento</option>
               <option value="Outros">Outros</option>
             </select>
+          </div>
 
           <div style={{ flex: 1, minWidth: '150px' }}>
             <label style={labelStyle}><Activity size={16} color={tema.texto2}/> Status</label>
@@ -139,7 +143,7 @@ const NovoAtendimento = ({
 
           {/* Toggle de Ticket Bonitão */}
           <div style={{ flex: 1, minWidth: '150px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start' }}>
-            <label style={labelStyle}><Ticket size={16} color={tema.texto2}/> Gerar Ticket?</label>
+            <label style={labelStyle}><Ticket size={16} color={tema.texto2}/> Gerar Ticket Kanban?</label>
             <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '10px' }}>
               <div style={{ position: 'relative', width: '44px', height: '24px', backgroundColor: isTicket ? '#f43f5e' : (isDarkMode ? '#334155' : '#cbd5e1'), borderRadius: '24px', transition: '0.3s' }}>
                 <div style={{ position: 'absolute', top: '2px', left: isTicket ? '22px' : '2px', width: '20px', height: '20px', backgroundColor: '#fff', borderRadius: '50%', transition: '0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}></div>
