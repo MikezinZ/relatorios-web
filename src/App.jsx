@@ -404,7 +404,17 @@ function App() {
   }
 
   return (
-    <div className="main-wrapper" style={{ minHeight: '100vh', backgroundColor: tema.fundoMain, padding: '20px', transition: 'background-color 0.5s ease' }}>
+    <div className="main-wrapper" style={{ 
+      minHeight: '100vh', 
+      padding: '20px', 
+      transition: 'all 0.5s ease',
+      backgroundImage: isDarkMode 
+        ? "linear-gradient(rgba(9, 9, 11, 0.85), rgba(9, 9, 11, 0.95)), url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')"
+        : "linear-gradient(rgba(241, 245, 249, 0.85), rgba(241, 245, 249, 0.92)), url('https://images.unsplash.com/photo-1557682250-33bd709cbe85?q=80&w=2629&auto=format&fit=crop')",
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed' 
+    }}>
       <Toaster theme={isDarkMode ? 'dark' : 'light'} richColors position="top-center" offset="80px" duration={5000} expand={true} />
       
       <style>{`
@@ -514,7 +524,7 @@ function App() {
             iniciarEdicaoUsuario={iniciarEdicaoUsuario} apagarUsuario={apagarUsuario}
           />
         )}
-        
+
         <BlocoNotas 
           isOpen={isNotasOpen} 
           onClose={() => setIsNotasOpen(false)} 
