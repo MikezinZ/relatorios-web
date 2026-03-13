@@ -1,10 +1,11 @@
 import React from 'react';
-import { Settings, Edit, LogOut, Sun, Moon, Ticket, Search, Bell, ListChecks, ShieldCheck } from 'lucide-react';
+import { Settings, Edit, LogOut, Sun, Moon, Ticket, Search, Bell, ListChecks, ShieldCheck, StickyNote } from 'lucide-react';
 import logoImg from '../assets/logo_Globalnet.png';
 
 const MenuSuperior = ({ 
   tema, isDarkMode, setIsDarkMode, abaAtiva, setAbaAtiva, isStaff, 
-  limparFormularioUsuario, handleLogout, notificacoesPendentes 
+  limparFormularioUsuario, handleLogout, notificacoesPendentes,
+  abrirNotas // <--- Recebendo a função mágica aqui
 }) => {
   
   // Função auxiliar para os botões do menu ficarem mais elegantes
@@ -69,9 +70,16 @@ const MenuSuperior = ({
       </div>
 
       <div style={{ display: 'flex', gap: '12px', paddingLeft: '15px', borderLeft: `1px solid ${tema.borda}` }}>
+        
+        {/* === NOVO BOTÃO: BLOCO DE NOTAS === */}
+        <button className="btn-premium" onClick={abrirNotas} style={{ padding: '10px', backgroundColor: isDarkMode ? 'rgba(234, 179, 8, 0.15)' : '#fefce8', color: '#eab308', border: 'none', borderRadius: '10px', cursor: 'pointer', transition: '0.3s', display: 'flex', alignItems: 'center' }} title="Meu Bloco Privado">
+          <StickyNote size={18} />
+        </button>
+
         <button className="btn-premium" onClick={() => setIsDarkMode(!isDarkMode)} style={{ padding: '10px', backgroundColor: isDarkMode ? 'rgba(253, 224, 71, 0.15)' : '#f1f5f9', color: isDarkMode ? '#fde047' : '#475569', border: 'none', borderRadius: '10px', cursor: 'pointer', transition: '0.3s', display: 'flex', alignItems: 'center' }} title="Alternar Tema">
           {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
         </button>
+        
         <button className="btn-premium" onClick={handleLogout} style={{ padding: '10px', backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2', color: '#ef4444', border: 'none', borderRadius: '10px', cursor: 'pointer', transition: '0.3s', display: 'flex', alignItems: 'center' }} title="Sair do Sistema">
           <LogOut size={18} />
         </button>

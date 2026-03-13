@@ -13,9 +13,11 @@ import NovoAtendimento from './pages/NovoAtendimento'
 import RadarTickets from './pages/RadarTickets'
 import Historico from './pages/Historico'
 import DashboardGestao from './pages/DashboardGestao'
-import MinhasRotinas from './pages/MinhasRotinas' // === NOVO COMPONENTE ===
+import MinhasRotinas from './pages/MinhasRotinas'
+import BlocoNotas from './components/BlocoNotas'
 
 function App() {
+  const [isNotasOpen, setIsNotasOpen] = useState(false)
   const [token, setToken] = useState(localStorage.getItem('token') || '')
   const [atendenteId, setAtendenteId] = useState(localStorage.getItem('atendenteId') || null)
   const [isStaff, setIsStaff] = useState(localStorage.getItem('isStaff') === 'true')
@@ -452,6 +454,7 @@ function App() {
           abaAtiva={abaAtiva} setAbaAtiva={setAbaAtiva} isStaff={isStaff} 
           limparFormularioUsuario={limparFormularioUsuario} handleLogout={handleLogout} 
           notificacoesPendentes={notificacoesPendentes} 
+          abrirNotas={() => setIsNotasOpen(true)} 
         />
 
         {abaAtiva === 'novo' && (
@@ -511,6 +514,14 @@ function App() {
             iniciarEdicaoUsuario={iniciarEdicaoUsuario} apagarUsuario={apagarUsuario}
           />
         )}
+        
+        <BlocoNotas 
+          isOpen={isNotasOpen} 
+          onClose={() => setIsNotasOpen(false)} 
+          tema={tema} 
+          isDarkMode={isDarkMode} 
+          token={token} 
+        />
       </div>
     </div>
   )
