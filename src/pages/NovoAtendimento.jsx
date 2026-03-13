@@ -106,20 +106,27 @@ const NovoAtendimento = ({
         {/* LINHA 2: Categoria, Status e Toggle Ticket */}
         <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.1)' : '#f8fafc', padding: '20px', borderRadius: '12px', border: `1px solid ${tema.borda}` }}>
           
-          <div style={{ flex: 1, minWidth: '180px' }}>
-            <label style={labelStyle}><List size={16} color={tema.texto2}/> Categoria</label>
-            <select value={categoria} onChange={e => setCategoria(e.target.value)} style={inputStyle}>
+          <select value={categoria} onChange={e => setCategoria(e.target.value)} style={inputStyle}>
               <option value="Hardware / Equipamento">Hardware / Equipamento</option>
               <option value="Sistema Operacional / Windows">Sistema Operacional / Windows</option>
               <option value="Rede Interna / Servidor">Rede Interna / Servidor</option>
               <option value="Internet / Wi-Fi">Internet / Wi-Fi</option>
               <option value="Sistemas / ERP">Sistemas / ERP</option>
               <option value="Pacote Office / Softwares">Pacote Office / Softwares</option>
+              <option value="E-mail / Webmail">E-mail / Webmail</option>
+              <option value="Acessos / Senhas">Acessos / Senhas</option>
+              <option value="Telefonia / Ramal">Telefonia / Ramal</option>
+              <option value="Celular / Smartphone">Celular / Smartphone</option>
+              <option value="Segurança / Antivírus">Segurança / Antivírus</option>
+              <option value="Backup / Nuvem">Backup / Nuvem</option>
+              <option value="Certificados Digitais">Certificados Digitais</option>
+              <option value="Relógio de Ponto">Relógio de Ponto</option>
+              <option value="Câmeras / CFTV">Câmeras / CFTV</option>
               <option value="Impressora">Impressora</option>
+              <option value="Periféricos (Mouse/Teclado)">Periféricos (Mouse/Teclado)</option>
               <option value="Dúvida / Treinamento">Dúvida / Treinamento</option>
               <option value="Outros">Outros</option>
             </select>
-          </div>
 
           <div style={{ flex: 1, minWidth: '150px' }}>
             <label style={labelStyle}><Activity size={16} color={tema.texto2}/> Status</label>
