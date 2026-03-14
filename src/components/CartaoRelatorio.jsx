@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import axios from 'axios';
+import { toast } from 'sonner';
 import { 
   Edit, Trash2, Ticket, CheckCircle2, AlertCircle, Clock3, Calendar,
   Monitor, LayoutGrid, Network, Wifi, Settings, FileText, Mail, Key,
   Phone, Smartphone, Shield, HardDrive, Lock, Clock, Video, Printer,
-  Mouse, HelpCircle, Wrench, Timer, MessageSquare, Send, ChevronDown, ChevronUp
+  Mouse, HelpCircle, Wrench, Timer, MessageSquare, Send, ChevronDown, ChevronUp, Sparkles
 } from 'lucide-react';
 
 const renderizarIconeCategoria = (catText) => {
@@ -32,9 +34,11 @@ const renderizarIconeCategoria = (catText) => {
 
 const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdicao, apagarRelatorio, adicionarAnotacao }) => {
   const [textoAnotacao, setTextoAnotacao] = useState('');
-  
-  // === NOVO ESTADO: Controla se o cartão está aberto ou fechado ===
   const [expandido, setExpandido] = useState(false); 
+  
+  // === ESTADOS DA I.A. ===
+  const [resumoIA, setResumoIA] = useState('');
+  const [loadingIA, setLoadingIA] = useState(false);
 
   let corStatusBg = isDarkMode ? 'rgba(226, 232, 240, 0.1)' : '#e2e8f0'; 
   let corStatusTxt = isDarkMode ? '#cbd5e1' : '#475569'; 
@@ -46,16 +50,13 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
 
   let badgeSLA = null;
   if (relatorio.status !== 'Resolvido') {
-    // 1. Pega apenas a data (AAAA-MM-DD), ignorando a hora em que foi aberto
     const dataString = relatorio.data_atendimento || relatorio.criado_em.split('T')[0];
     const [ano, mes, dia] = dataString.split('-');
     
-    // 2. Cria as datas "zeradas" (meia-noite) para forçar a comparação pelo calendário
     const dataCriacao = new Date(ano, mes - 1, dia);
     const hoje = new Date();
     const dataHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
     
-    // 3. Calcula a diferença real de dias no calendário
     const diffTime = dataHoje.getTime() - dataCriacao.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     
@@ -64,17 +65,8 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
     let textoSla = 'Aberto hoje';
     let piscar = false;
 
-    if (diffDays === 1) { 
-      corSlaBg = isDarkMode ? 'rgba(234, 179, 8, 0.15)' : '#fef08a'; 
-      corSlaTxt = isDarkMode ? '#fde047' : '#854d0e'; 
-      textoSla = 'Aberto há 1 dia'; 
-    } 
-    else if (diffDays >= 2) { 
-      corSlaBg = isDarkMode ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2'; 
-      corSlaTxt = isDarkMode ? '#fca5a5' : '#991b1b'; 
-      textoSla = `Atrasado: ${diffDays} dias`; 
-      piscar = true; 
-    }
+    if (diffDays === 1) { corSlaBg = isDarkMode ? 'rgba(234, 179, 8, 0.15)' : '#fef08a'; corSlaTxt = isDarkMode ? '#fde047' : '#854d0e'; textoSla = 'Aberto há 1 dia'; } 
+    else if (diffDays >= 2) { corSlaBg = isDarkMode ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2'; corSlaTxt = isDarkMode ? '#fca5a5' : '#991b1b'; textoSla = `Atrasado: ${diffDays} dias`; piscar = true; }
 
     badgeSLA = (
       <span className={piscar ? "animate-pulse" : ""} style={{ fontSize: '11px', backgroundColor: corSlaBg, color: corSlaTxt, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px', border: piscar ? '1px solid rgba(239, 68, 68, 0.5)' : `1px solid ${tema.borda}` }}>
@@ -87,6 +79,40 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
     if (adicionarAnotacao) {
       adicionarAnotacao(relatorio.id, textoAnotacao);
       setTextoAnotacao('');
+    }
+  };
+
+  // === FUNÇÃO MÁGICA DA I.A. ===
+  const gerarResumoInteligente = async () => {
+    setLoadingIA(true);
+    setResumoIA('');
+    
+    // 1. Montamos um pacotão com tudo o que a IA precisa ler
+    let contexto = `PROBLEMA ORIGINAL: ${relatorio.solit_prob}\n`;
+    contexto += `RESOLUÇÃO: ${relatorio.resolucao || 'Nenhuma'}\n`;
+    if (relatorio.obs) contexto += `OBSERVAÇÕES: ${relatorio.obs}\n`;
+    
+    if (relatorio.anotacoes && relatorio.anotacoes.length > 0) {
+      contexto += `\nHISTÓRICO DE INTERAÇÕES DA EQUIPE:\n`;
+      relatorio.anotacoes.forEach(nota => {
+        contexto += `- ${nota.autor_nome} disse: "${nota.texto}"\n`;
+      });
+    }
+
+    // 2. Disparamos pro nosso Backend em Django
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post('https://api-ti-relatorios.onrender.com/api/ia/resumo/', 
+        { texto: contexto },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setResumoIA(response.data.resumo);
+      toast.success('Resumo gerado com sucesso!');
+    } catch (error) {
+      console.error(error);
+      toast.error('Erro ao conectar com a I.A. Verifique o servidor.');
+    } finally {
+      setLoadingIA(false);
     }
   };
 
@@ -128,7 +154,7 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
         {badgeSLA}
       </div>
 
-      {/* === ÁREA TRUNCADA (Clique para expandir) === */}
+      {/* === ÁREA TRUNCADA === */}
       <div 
         onClick={() => setExpandido(!expandido)}
         style={{ backgroundColor: isDarkMode ? 'rgba(0,0,0,0.15)' : '#f8fafc', padding: '12px', borderRadius: '10px', border: `1px solid ${tema.borda}`, cursor: 'pointer', transition: '0.2s' }}
@@ -138,7 +164,6 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
           <strong>PROBLEMA:</strong> {relatorio.solit_prob}
         </p>
         
-        {/* Só renderiza Resolução e OBS se estiver expandido (ou se não tiver problema escrito) */}
         {(expandido || !relatorio.solit_prob) && (
           <p style={{ margin: '0', fontSize: '13px', color: tema.texto1, lineHeight: '1.5' }}><strong>RESOLUÇÃO:</strong> {relatorio.resolucao}</p>
         )}
@@ -148,12 +173,33 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
         )}
       </div>
 
-      {/* === DIÁRIO DO TICKET SÓ APARECE EXPANDIDO === */}
+      {/* === ÁREA EXPANDIDA (DIÁRIO E I.A.) === */}
       {expandido && relatorio.is_ticket && (
         <div className="fade-in" style={{ marginTop: '15px', paddingTop: '15px', borderTop: `1px solid ${tema.borda}` }}>
-          <h4 style={{ margin: '0 0 12px 0', fontSize: '11px', color: tema.texto2, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700' }}>
-            <MessageSquare size={14} /> Diário do Ticket
-          </h4>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <h4 style={{ margin: 0, fontSize: '11px', color: tema.texto2, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700' }}>
+              <MessageSquare size={14} /> Diário do Ticket
+            </h4>
+
+            {/* BOTÃO DA INTELIGÊNCIA ARTIFICIAL */}
+            <button 
+              onClick={(e) => { e.stopPropagation(); gerarResumoInteligente(); }}
+              disabled={loadingIA}
+              style={{ background: 'linear-gradient(to right, #8b5cf6, #3b82f6)', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold', cursor: loadingIA ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(139, 92, 246, 0.3)', transition: '0.3s' }}
+            >
+              <Sparkles size={14} className={loadingIA ? "animate-pulse" : ""} /> 
+              {loadingIA ? 'Analisando dados...' : 'Gerar Resumo (I.A.)'}
+            </button>
+          </div>
+
+          {/* CAIXA COM A RESPOSTA DA I.A. */}
+          {resumoIA && (
+            <div className="fade-in" style={{ marginBottom: '15px', padding: '12px', borderRadius: '8px', backgroundColor: isDarkMode ? 'rgba(139, 92, 246, 0.1)' : '#f3e8ff', border: `1px solid ${isDarkMode ? 'rgba(139, 92, 246, 0.3)' : '#d8b4fe'}`, color: tema.texto1, fontSize: '13px', lineHeight: '1.5' }}>
+              <strong style={{ display: 'flex', alignItems: 'center', gap: '6px', color: isDarkMode ? '#c4b5fd' : '#7e22ce', marginBottom: '6px', fontSize: '11px', textTransform: 'uppercase' }}><Sparkles size={12}/> Resumo Executivo Gemini</strong>
+              {resumoIA}
+            </div>
+          )}
           
           <div style={{ paddingLeft: '12px', borderLeft: `2px solid ${isDarkMode ? 'rgba(50, 184, 247, 0.3)' : '#cbd5e1'}`, display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
             {(!relatorio.anotacoes || relatorio.anotacoes.length === 0) ? (
@@ -194,7 +240,7 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
         </div>
       )}
 
-      {/* === RODAPÉ DO CARTÃO (Com o botão de expandir) === */}
+      {/* === RODAPÉ DO CARTÃO === */}
       <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: `1px dashed ${tema.borda}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: '11px', color: tema.texto2 }}>Equipe: <strong style={{ color: tema.texto1, backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>{relatorio.atendente_nome}</strong></span>
         
