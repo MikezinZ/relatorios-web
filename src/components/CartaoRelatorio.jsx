@@ -174,7 +174,7 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
       </div>
 
       {/* === ÁREA EXPANDIDA (DIÁRIO E I.A.) === */}
-      {expandido && relatorio.is_ticket && (
+      {expandido && (
         <div className="fade-in" style={{ marginTop: '15px', paddingTop: '15px', borderTop: `1px solid ${tema.borda}` }}>
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
