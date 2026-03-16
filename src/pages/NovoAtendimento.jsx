@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Edit, Save, X, Building2, User, Calendar, List, Activity, Users, FileText, MessageSquare, Ticket } from 'lucide-react';
+import { Edit, Save, X, Building2, User, Calendar, List, Activity, Users, FileText, MessageSquare, Ticket, Sparkles } from 'lucide-react';
+import axios from 'axios';
+import { toast } from 'sonner';
 
 const NovoAtendimento = ({
   tema, isDarkMode, editandoId, handleSubmit, usuarios, atendentesSelecionados, handleToggleAtendente,
@@ -12,6 +14,9 @@ const NovoAtendimento = ({
   // === ESTADOS DO NOSSO AUTOCOMPLETAR CUSTOMIZADO ===
   const [showSugestoesEmpresa, setShowSugestoesEmpresa] = useState(false);
   const [showSugestoesFuncionario, setShowSugestoesFuncionario] = useState(false);
+  
+  // === ESTADO DA NOSSA I.A. ===
+  const [loadingIA, setLoadingIA] = useState(false);
 
   // Filtra as sugestões conforme o usuário digita
   const empresasFiltradas = empresasUnicas.filter(e => e && e.toLowerCase().includes(empresa.toLowerCase()) && e !== empresa);
@@ -32,6 +37,30 @@ const NovoAtendimento = ({
     border: `1px solid ${tema.borda}`, borderRadius: '10px', 
     maxHeight: '180px', overflowY: 'auto', margin: '4px 0 0 0', padding: 0, 
     listStyle: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+  };
+
+  // === FUNÇÃO DA I.A. PARA TRIAGEM ===
+  const autoCategorizar = async () => {
+    if (!solitProb.trim()) {
+      toast.warning('Descreva o problema primeiro para a I.A. conseguir analisar!');
+      return;
+    }
+    setLoadingIA(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post('https://api-ti-relatorios.onrender.com/api/ia/categorizar/', 
+        { texto: solitProb },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Atualiza o select com a resposta exata da I.A.
+      setCategoria(res.data.categoria);
+      toast.success('✨ Categoria definida pela I.A.!');
+    } catch (error) {
+      toast.error('Erro ao conectar com a I.A.');
+    } finally {
+      setLoadingIA(false);
+    }
   };
 
   return (
@@ -55,7 +84,6 @@ const NovoAtendimento = ({
               type="text" required placeholder="Digite o nome da empresa..." value={empresa}
               onChange={(e) => { setEmpresa(e.target.value); setShowSugestoesEmpresa(true); }}
               onFocus={() => setShowSugestoesEmpresa(true)}
-              // O setTimeout garante que o clique na lista funcione antes de fechar
               onBlur={() => setTimeout(() => setShowSugestoesEmpresa(false), 200)} 
               style={inputStyle} onFocusCapture={(e) => e.target.style.borderColor = '#32b8f7'} onBlurCapture={(e) => e.target.style.borderColor = tema.borda}
             />
@@ -104,11 +132,22 @@ const NovoAtendimento = ({
         </div>
 
         {/* LINHA 2: Categoria, Status e Toggle Ticket */}
-        {/* LINHA 2: Categoria, Status e Toggle Ticket */}
         <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.1)' : '#f8fafc', padding: '20px', borderRadius: '12px', border: `1px solid ${tema.borda}` }}>
           
           <div style={{ flex: 1, minWidth: '200px' }}>
-            <label style={labelStyle}><List size={16} color={tema.texto2}/> Categoria</label>
+            {/* O BOTÃO MÁGICO FICA AQUI */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label style={{ ...labelStyle, marginBottom: 0 }}><List size={16} color={tema.texto2}/> Categoria</label>
+              <button 
+                type="button" 
+                onClick={autoCategorizar} 
+                disabled={loadingIA}
+                style={{ background: 'transparent', border: `1px solid ${isDarkMode ? 'rgba(139, 92, 246, 0.5)' : '#d8b4fe'}`, color: isDarkMode ? '#c4b5fd' : '#9333ea', fontSize: '11px', padding: '2px 8px', borderRadius: '6px', cursor: loadingIA ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold', transition: '0.2s' }}
+              >
+                <Sparkles size={12} className={loadingIA ? "animate-pulse" : ""} /> 
+                {loadingIA ? 'Pensando...' : 'Auto-Categorizar'}
+              </button>
+            </div>
             <select value={categoria} onChange={e => setCategoria(e.target.value)} style={inputStyle}>
               <option value="Hardware / Equipamento">Hardware / Equipamento</option>
               <option value="Sistema Operacional / Windows">Sistema Operacional / Windows</option>
@@ -154,19 +193,6 @@ const NovoAtendimento = ({
           </div>
         </div>
 
-        {/* LINHA 3: Equipe (Checkboxes) */}
-        <div>
-          <label style={labelStyle}><Users size={16} color={tema.texto2}/> Equipe Responsável *</label>
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', padding: '15px', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.1)' : '#f8fafc', borderRadius: '10px', border: `1px solid ${tema.borda}` }}>
-            {usuarios.filter(u => u.is_active).map(user => (
-              <label key={user.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', backgroundColor: atendentesSelecionados.includes(user.id) ? (isDarkMode ? 'rgba(50, 184, 247, 0.15)' : '#e0f2fe') : (isDarkMode ? '#1e293b' : '#fff'), padding: '6px 12px', borderRadius: '20px', border: `1px solid ${atendentesSelecionados.includes(user.id) ? '#32b8f7' : tema.borda}`, transition: '0.2s', fontSize: '13px', fontWeight: atendentesSelecionados.includes(user.id) ? 'bold' : 'normal', color: atendentesSelecionados.includes(user.id) ? '#32b8f7' : tema.texto1 }}>
-                <input type="checkbox" checked={atendentesSelecionados.includes(user.id)} onChange={() => handleToggleAtendente(user.id)} style={{ accentColor: '#32b8f7' }} />
-                {user.username}
-              </label>
-            ))}
-          </div>
-        </div>
-
         {/* TEXTAREAS */}
         <div>
           <label style={labelStyle}><MessageSquare size={16} color={tema.texto2}/> Problema Relatado *</label>
@@ -181,6 +207,19 @@ const NovoAtendimento = ({
         <div>
           <label style={{...labelStyle, color: tema.texto2}}>Observações Internas (Opcional)</label>
           <input type="text" placeholder="Algum detalhe extra?" value={obs} onChange={e => setObs(e.target.value)} style={inputStyle} />
+        </div>
+
+        {/* LINHA 3: Equipe (Checkboxes) */}
+        <div>
+          <label style={labelStyle}><Users size={16} color={tema.texto2}/> Equipe Responsável *</label>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', padding: '15px', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.1)' : '#f8fafc', borderRadius: '10px', border: `1px solid ${tema.borda}` }}>
+            {usuarios.filter(u => u.is_active).map(user => (
+              <label key={user.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', backgroundColor: atendentesSelecionados.includes(user.id) ? (isDarkMode ? 'rgba(50, 184, 247, 0.15)' : '#e0f2fe') : (isDarkMode ? '#1e293b' : '#fff'), padding: '6px 12px', borderRadius: '20px', border: `1px solid ${atendentesSelecionados.includes(user.id) ? '#32b8f7' : tema.borda}`, transition: '0.2s', fontSize: '13px', fontWeight: atendentesSelecionados.includes(user.id) ? 'bold' : 'normal', color: atendentesSelecionados.includes(user.id) ? '#32b8f7' : tema.texto1 }}>
+                <input type="checkbox" checked={atendentesSelecionados.includes(user.id)} onChange={() => handleToggleAtendente(user.id)} style={{ accentColor: '#32b8f7' }} />
+                {user.username}
+              </label>
+            ))}
+          </div>
         </div>
 
         {/* BOTÕES */}
