@@ -15,8 +15,9 @@ const NovoAtendimento = ({
   const [showSugestoesEmpresa, setShowSugestoesEmpresa] = useState(false);
   const [showSugestoesFuncionario, setShowSugestoesFuncionario] = useState(false);
   
-  // === ESTADO DA NOSSA I.A. ===
+  // === ESTADOS DA NOSSA I.A. ===
   const [loadingIA, setLoadingIA] = useState(false);
+  const [loadingMelhoria, setLoadingMelhoria] = useState(false); // Novo estado para o Gourmetizador
 
   // Filtra as sugestões conforme o usuário digita
   const empresasFiltradas = empresasUnicas.filter(e => e && e.toLowerCase().includes(empresa.toLowerCase()) && e !== empresa);
@@ -60,6 +61,30 @@ const NovoAtendimento = ({
       toast.error('Erro ao conectar com a I.A.');
     } finally {
       setLoadingIA(false);
+    }
+  };
+
+  // === FUNÇÃO DA I.A. PARA MELHORAR TEXTO ===
+  const melhorarTextoResolucao = async () => {
+    if (!resolucao.trim()) {
+      toast.warning('Escreva algo na resolução primeiro para a I.A. poder melhorar!');
+      return;
+    }
+    setLoadingMelhoria(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post('https://api-ti-relatorios.onrender.com/api/ia/melhorar-texto/', 
+        { texto: resolucao },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Substitui o texto rascunho pelo texto bonitão
+      setResolucao(res.data.texto_melhorado);
+      toast.success('✨ Texto lapidado com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao conectar com a I.A.');
+    } finally {
+      setLoadingMelhoria(false);
     }
   };
 
@@ -135,7 +160,7 @@ const NovoAtendimento = ({
         <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.1)' : '#f8fafc', padding: '20px', borderRadius: '12px', border: `1px solid ${tema.borda}` }}>
           
           <div style={{ flex: 1, minWidth: '200px' }}>
-            {/* O BOTÃO MÁGICO FICA AQUI */}
+            {/* BOTÃO MÁGICO DE CATEGORIZAR AQUI */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <label style={{ ...labelStyle, marginBottom: 0 }}><List size={16} color={tema.texto2}/> Categoria</label>
               <button 
@@ -200,7 +225,19 @@ const NovoAtendimento = ({
         </div>
 
         <div>
-          <label style={labelStyle}><MessageSquare size={16} color={tema.texto2}/> Resolução / Procedimento Adotado *</label>
+          {/* BOTÃO MÁGICO DO GOURMETIZADOR AQUI */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <label style={{ ...labelStyle, marginBottom: 0 }}><MessageSquare size={16} color={tema.texto2}/> Resolução / Procedimento Adotado *</label>
+            <button 
+              type="button" 
+              onClick={melhorarTextoResolucao} 
+              disabled={loadingMelhoria}
+              style={{ background: 'transparent', border: `1px solid ${isDarkMode ? 'rgba(16, 185, 129, 0.5)' : '#6ee7b7'}`, color: isDarkMode ? '#34d399' : '#059669', fontSize: '11px', padding: '2px 8px', borderRadius: '6px', cursor: loadingMelhoria ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold', transition: '0.2s' }}
+            >
+              <Sparkles size={12} className={loadingMelhoria ? "animate-pulse" : ""} /> 
+              {loadingMelhoria ? 'Lapidando...' : 'Melhorar Texto (I.A.)'}
+            </button>
+          </div>
           <textarea required placeholder="Como foi resolvido ou qual o próximo passo?" value={resolucao} onChange={e => setResolucao(e.target.value)} rows="4" style={{...inputStyle, resize: 'vertical'}} />
         </div>
 
