@@ -77,15 +77,15 @@ function App() {
 
   // === NOVA PALETA DE CORES PREMIUM ===
   const tema = {
-    fundoMain: isDarkMode ? '#09090b' : '#f1f5f9', // Deep black super elegante
+    fundoMain: isDarkMode ? '#09090b' : '#f1f5f9',
     fundoCard: isDarkMode ? '#1e293b' : '#ffffff',
     texto1: isDarkMode ? '#f8fafc' : '#0f172a',
     texto2: isDarkMode ? '#94a3b8' : '#64748b',
-    borda: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)', // Borda super sutil
+    borda: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
     inputBg: isDarkMode ? '#0f172a' : '#f8fafc',
     fundoDestaque: isDarkMode ? '#0f172a' : '#f8fafc',
     graficoTexto: isDarkMode ? '#cbd5e1' : '#475569',
-    gradientePrimary: 'linear-gradient(to right, #32b8f7, #2563eb)' // Gradiente da marca
+    gradientePrimary: 'linear-gradient(to right, #32b8f7, #2563eb)'
   }
 
   const handleLogin = (e) => {
@@ -127,7 +127,7 @@ function App() {
         })
 
       buscarUsuarios()
-      buscarTarefas() // === BUSCA TAREFAS NO LOGIN ===
+      buscarTarefas()
 
       if (atendenteId && atendentesSelecionados.length === 0 && !editandoId) {
         setAtendentesSelecionados([parseInt(atendenteId)]);
@@ -135,7 +135,6 @@ function App() {
     }
   }, [token, atendenteId])
 
-  // === FUNÇÕES DO MÓDULO DE ROTINAS ===
   const buscarTarefas = (usuarioIdFiltro = null) => {
     let url = 'https://api-ti-relatorios.onrender.com/api/tarefas/';
     if (usuarioIdFiltro) url += `?usuario_id=${usuarioIdFiltro}`;
@@ -230,7 +229,7 @@ function App() {
 
     setIsTicket(relatorio.is_ticket || false);
     setAtendentesSelecionados(relatorio.atendentes || []);
-    setSolitProb(relatorio.solit_prob); setResolucao(relatorio.resolucao); setObs(relatorio.obs || ''); setAbaAtiva('novo');
+    setSolitProb(relatorio.solit_prob); setResolucao(relatorio.resolucao || ''); setObs(relatorio.obs || ''); setAbaAtiva('novo');
   }
 
   const apagarRelatorio = (id) => {
@@ -275,12 +274,9 @@ function App() {
     .catch(error => toast.error("Erro ao salvar anotação.", { id: toastId }));
   }
 
-  // === NOVA FUNÇÃO: MOVER TICKET (DRAG AND DROP) ===
   const moverTicket = (id, novoStatus) => {
-    // 1. Atualização Otimista: Muda na tela na mesma hora, para ficar super fluido!
     setRelatorios(relatorios.map(r => r.id === id ? { ...r, status: novoStatus } : r));
 
-    // 2. Avisa o banco de dados em background usando PATCH (atualiza só o campo de status)
     axios.patch(`https://api-ti-relatorios.onrender.com/api/relatorios/${id}/`, 
       { status: novoStatus }, 
       { headers: { Authorization: `Bearer ${token}` } }
@@ -288,12 +284,8 @@ function App() {
       toast.success(`Ticket atualizado para: ${novoStatus}`);
     }).catch(error => {
       toast.error("Erro ao mover o ticket. Ele voltará à posição original.");
-      buscarTarefas(); // Em caso de erro real no servidor, refaz a busca
+      buscarTarefas();
     });
-  }
-
-  const limparFiltrosHistorico = () => {
-    setBusca(''); setFiltroDataTela(''); setFiltroCategoriaHist(''); setFiltroStatusHist(''); setFiltroAtendenteHist('');
   }
 
   const formatarData = (dataString) => {
@@ -321,15 +313,36 @@ function App() {
     return dados
   }
 
+  // === EXPORTAÇÕES ATUALIZADAS (TICKET, RESOLUÇÃO E CONCLUSÃO) ===
+
   const gerarPDF = () => {
     const dados = filtrarDadosParaExportacao()
     if (dados.length === 0) { toast.warning("Nenhum relatório encontrado!"); return; }
     const doc = new jsPDF('landscape')
     doc.setFontSize(18); doc.text("Relatório Geral de Atendimentos - T.I.", 14, 22)
     doc.setFontSize(10); doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 30)
-    const colunas = ["Data do B.O", "Empresa", "Func.", "Categ.", "Status", "Problema", "Equipe"]
-    const linhas = dados.map(r => [formatarData(r.data_atendimento || r.criado_em.split('T')[0]), r.empresa, r.funcionario || '-', r.categoria || '-', r.status || '-', r.solit_prob, r.atendente_nome])
-    autoTable(doc, { head: [colunas], body: linhas, startY: 35, styles: { fontSize: 8, cellPadding: 2 }, headStyles: { fillColor: [50, 184, 247] }, columnStyles: { 5: { cellWidth: 80 } } })
+    
+    // Novas Colunas
+    const colunas = ["B.O / Conclusão", "Empresa", "Func.", "Categ.", "Status", "Problema", "Resolução", "Equipe"]
+    
+    const linhas = dados.map(r => {
+      // Formata o número do ticket se tiver
+      let ticketTag = r.is_ticket ? (r.numero_ticket ? `[#${r.numero_ticket}] ` : "[TICKET] ") : "";
+      
+      // Formata a data de conclusão
+      let dtConclusao = r.data_conclusao ? formatarData(r.data_conclusao.split('T')[0]) : "Pendente";
+      let datas = `Iníc: ${formatarData(r.data_atendimento || r.criado_em.split('T')[0])}\nFim: ${dtConclusao}`;
+      
+      // Trata a resolução vazia
+      let textoResolucao = r.resolucao ? r.resolucao : "⏳ Aguardando Resolução";
+
+      return [datas, ticketTag + r.empresa, r.funcionario || '-', r.categoria || '-', r.status || '-', r.solit_prob, textoResolucao, r.atendente_nome];
+    })
+
+    autoTable(doc, { 
+      head: [colunas], body: linhas, startY: 35, styles: { fontSize: 8, cellPadding: 2 }, 
+      headStyles: { fillColor: [50, 184, 247] }, columnStyles: { 5: { cellWidth: 50 }, 6: { cellWidth: 50 } } 
+    })
     doc.save(`${gerarNomeArquivo()}.pdf`); toast.success("PDF baixado!")
   }
 
@@ -338,7 +351,15 @@ function App() {
     if (dados.length === 0) { toast.warning("Nenhum relatório encontrado!"); return; }
     let texto = `=== RELATÓRIOS DE ATENDIMENTO ===\n\n`;
     [...dados].reverse().forEach((r, i) => {
-      texto += `ATENDIMENTO #${i + 1} - Data do B.O: ${formatarData(r.data_atendimento || r.criado_em.split('T')[0])}\nEmpresa: ${r.empresa}\nCategoria: ${r.categoria}\nStatus: ${r.status}\nProblema: ${r.solit_prob}\nResolução: ${r.resolucao}\nEquipe: ${r.atendente_nome}\n--------------------------------------------------\n\n`;
+      let ticketInfo = r.is_ticket ? (r.numero_ticket ? `(TICKET #${r.numero_ticket})` : "(TICKET)") : "";
+      let dtConclusao = r.data_conclusao ? formatarData(r.data_conclusao.split('T')[0]) : "Pendente";
+      let resFinal = r.resolucao ? r.resolucao : "⏳ Aguardando Resolução";
+
+      texto += `ATENDIMENTO #${i + 1} ${ticketInfo}\n`;
+      texto += `Data do B.O: ${formatarData(r.data_atendimento || r.criado_em.split('T')[0])} | Conclusão: ${dtConclusao}\n`;
+      texto += `Empresa: ${r.empresa}\nCategoria: ${r.categoria}\nStatus: ${r.status}\nProblema: ${r.solit_prob}\nResolução: ${resFinal}\nEquipe: ${r.atendente_nome}\n`;
+      if (r.obs) texto += `Obs: ${r.obs}\n`;
+      texto += `--------------------------------------------------\n\n`;
     });
     const blob = new Blob([texto], { type: 'text/plain;charset=utf-8' });
     const link = document.createElement('a'); link.href = URL.createObjectURL(blob);
@@ -348,20 +369,25 @@ function App() {
   const gerarCSV = () => {
     const dados = filtrarDadosParaExportacao();
     if (dados.length === 0) { toast.warning("Nenhum relatório encontrado!"); return; }
-    let csvContent = "Data,Empresa,Funcionário,Categoria,Status,Ticket,Problema,Resolução,Observações,Equipe\n";
+    // Nova coluna de Conclusão adicionada no cabeçalho
+    let csvContent = "Data_Abertura,Data_Conclusao,Empresa,Funcionário,Categoria,Status,Ticket,Problema,Resolução,Observações,Equipe\n";
+    
     [...dados].reverse().forEach(r => {
-      const data = formatarData(r.data_atendimento || r.criado_em.split('T')[0]);
+      const dataAbertura = formatarData(r.data_atendimento || r.criado_em.split('T')[0]);
+      const dataConc = r.data_conclusao ? formatarData(r.data_conclusao.split('T')[0]) : "Pendente";
       const emp = `"${(r.empresa || '').replace(/"/g, '""')}"`;
       const func = `"${(r.funcionario || '').replace(/"/g, '""')}"`;
       const cat = `"${(r.categoria || '').replace(/"/g, '""')}"`;
       const status = `"${(r.status || '').replace(/"/g, '""')}"`;
       const ticket = r.is_ticket ? (r.numero_ticket ? `"#${r.numero_ticket}"` : '"Sim"') : '""';
       const prob = `"${(r.solit_prob || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`;
-      const res = `"${(r.resolucao || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`;
+      const res = `"${(r.resolucao || '⏳ Aguardando Resolução').replace(/"/g, '""').replace(/\n/g, ' ')}"`;
       const obs = `"${(r.obs || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`;
       const equipe = `"${(r.atendente_nome || '').replace(/"/g, '""')}"`;
-      csvContent += `${data},${emp},${func},${cat},${status},${ticket},${prob},${res},${obs},${equipe}\n`;
+      
+      csvContent += `${dataAbertura},${dataConc},${emp},${func},${cat},${status},${ticket},${prob},${res},${obs},${equipe}\n`;
     });
+    
     const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
     link.download = `${gerarNomeArquivo()}.csv`; link.click(); toast.success("Planilha exportada com sucesso!");
@@ -373,7 +399,7 @@ function App() {
   const isFiltrando = busca !== '' || filtroDataTela !== '' || filtroCategoriaHist !== '' || filtroStatusHist !== '' || filtroAtendenteHist !== '';
   const relatoriosFiltradosHist = relatorios.filter((r) => {
     const tBusca = busca.toLowerCase();
-    const matchBusca = busca === '' || (r.empresa?.toLowerCase().includes(tBusca) || r.solit_prob?.toLowerCase().includes(tBusca) || r.resolucao?.toLowerCase().includes(tBusca) || r.funcionario?.toLowerCase().includes(tBusca));
+    const matchBusca = busca === '' || (r.empresa?.toLowerCase().includes(tBusca) || r.solit_prob?.toLowerCase().includes(tBusca) || (r.resolucao || '').toLowerCase().includes(tBusca) || r.funcionario?.toLowerCase().includes(tBusca));
     const matchData = filtroDataTela === '' || (r.data_atendimento || r.criado_em.split('T')[0]) === filtroDataTela;
     const matchCategoria = filtroCategoriaHist === '' || r.categoria === filtroCategoriaHist;
     const matchStatus = filtroStatusHist === '' || r.status === filtroStatusHist;
@@ -503,7 +529,6 @@ function App() {
           />
         )}
 
-        {/* === ABA DE ROTINAS RENDERIZADA === */}
         {abaAtiva === 'rotinas' && (
           <MinhasRotinas 
             tema={tema} isDarkMode={isDarkMode} token={token} 
