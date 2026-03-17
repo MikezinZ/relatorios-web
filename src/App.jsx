@@ -319,6 +319,8 @@ function App() {
 
   // === EXPORTAÇÕES ATUALIZADAS (TICKET, RESOLUÇÃO E CONCLUSÃO) ===
 
+  // === EXPORTAÇÕES ATUALIZADAS (CORREÇÃO DO STATUS PENDENTE) ===
+
   const gerarPDF = () => {
     const dados = filtrarDadosParaExportacao()
     if (dados.length === 0) { toast.warning("Nenhum relatório encontrado!"); return; }
@@ -326,18 +328,20 @@ function App() {
     doc.setFontSize(18); doc.text("Relatório Geral de Atendimentos - T.I.", 14, 22)
     doc.setFontSize(10); doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 30)
     
-    // Novas Colunas
     const colunas = ["B.O / Conclusão", "Empresa", "Func.", "Categ.", "Status", "Problema", "Resolução", "Equipe"]
     
     const linhas = dados.map(r => {
-      // Formata o número do ticket se tiver
       let ticketTag = r.is_ticket ? (r.numero_ticket ? `[#${r.numero_ticket}] ` : "[TICKET] ") : "";
       
-      // Formata a data de conclusão
-      let dtConclusao = r.data_conclusao ? formatarData(r.data_conclusao.split('T')[0]) : "Pendente";
+      // NOVA LÓGICA INTELIGENTE DE DATA
+      let dtConclusao = "Pendente";
+      if (r.data_conclusao) {
+        dtConclusao = formatarData(r.data_conclusao.split('T')[0]);
+      } else if (r.status === 'Resolvido') {
+        dtConclusao = formatarData(r.data_atendimento || r.criado_em.split('T')[0]);
+      }
+
       let datas = `Iníc: ${formatarData(r.data_atendimento || r.criado_em.split('T')[0])}\nFim: ${dtConclusao}`;
-      
-      // Trata a resolução vazia
       let textoResolucao = r.resolucao ? r.resolucao : "⏳ Aguardando Resolução";
 
       return [datas, ticketTag + r.empresa, r.funcionario || '-', r.categoria || '-', r.status || '-', r.solit_prob, textoResolucao, r.atendente_nome];
@@ -356,7 +360,15 @@ function App() {
     let texto = `=== RELATÓRIOS DE ATENDIMENTO ===\n\n`;
     [...dados].reverse().forEach((r, i) => {
       let ticketInfo = r.is_ticket ? (r.numero_ticket ? `(TICKET #${r.numero_ticket})` : "(TICKET)") : "";
-      let dtConclusao = r.data_conclusao ? formatarData(r.data_conclusao.split('T')[0]) : "Pendente";
+      
+      // NOVA LÓGICA INTELIGENTE DE DATA
+      let dtConclusao = "Pendente";
+      if (r.data_conclusao) {
+        dtConclusao = formatarData(r.data_conclusao.split('T')[0]);
+      } else if (r.status === 'Resolvido') {
+        dtConclusao = formatarData(r.data_atendimento || r.criado_em.split('T')[0]);
+      }
+
       let resFinal = r.resolucao ? r.resolucao : "⏳ Aguardando Resolução";
 
       texto += `ATENDIMENTO #${i + 1} ${ticketInfo}\n`;
@@ -373,12 +385,19 @@ function App() {
   const gerarCSV = () => {
     const dados = filtrarDadosParaExportacao();
     if (dados.length === 0) { toast.warning("Nenhum relatório encontrado!"); return; }
-    // Nova coluna de Conclusão adicionada no cabeçalho
     let csvContent = "Data_Abertura,Data_Conclusao,Empresa,Funcionário,Categoria,Status,Ticket,Problema,Resolução,Observações,Equipe\n";
     
     [...dados].reverse().forEach(r => {
       const dataAbertura = formatarData(r.data_atendimento || r.criado_em.split('T')[0]);
-      const dataConc = r.data_conclusao ? formatarData(r.data_conclusao.split('T')[0]) : "Pendente";
+      
+      // NOVA LÓGICA INTELIGENTE DE DATA
+      let dataConc = "Pendente";
+      if (r.data_conclusao) {
+        dataConc = formatarData(r.data_conclusao.split('T')[0]);
+      } else if (r.status === 'Resolvido') {
+        dataConc = formatarData(r.data_atendimento || r.criado_em.split('T')[0]);
+      }
+
       const emp = `"${(r.empresa || '').replace(/"/g, '""')}"`;
       const func = `"${(r.funcionario || '').replace(/"/g, '""')}"`;
       const cat = `"${(r.categoria || '').replace(/"/g, '""')}"`;
