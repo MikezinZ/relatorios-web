@@ -197,15 +197,15 @@ const MenuSuperior = ({
             {/* Rodapé do Menu Mobile */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', borderTop: `1px solid ${tema.borda}`, paddingTop: '20px' }}>
               <button onClick={() => { setMenuMobileAberto(false); abrirNotas(); }} style={{ background: 'transparent', border: 'none', color: '#eab308', cursor: 'pointer', padding: '12px', display: 'flex', alignItems: 'center', gap: '12px', fontWeight: 'bold', fontSize: '15px' }}>
-                <StickyNote size={20} /> Bloco de Notas Pessoal
+                <StickyNote size={20} /> Bloco de Notas
               </button>
               
               <button onClick={() => setIsDarkMode(!isDarkMode)} style={{ background: 'transparent', border: 'none', color: isDarkMode ? '#fde047' : '#64748b', cursor: 'pointer', padding: '12px', display: 'flex', alignItems: 'center', gap: '12px', fontWeight: 'bold', fontSize: '15px' }}>
-                {isDarkMode ? <Sun size={20} /> : <Moon size={20} />} {isDarkMode ? 'Mudar para Tema Claro' : 'Mudar para Tema Escuro'}
+                {isDarkMode ? <Sun size={20} /> : <Moon size={20} />} {isDarkMode ? 'Tema Claro' : 'Tema Escuro'}
               </button>
               
               <button onClick={handleLogout} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '12px', display: 'flex', alignItems: 'center', gap: '12px', fontWeight: 'bold', fontSize: '15px' }}>
-                <LogOut size={20} /> Sair do Sistema
+                <LogOut size={20} /> Sair
               </button>
             </div>
 
