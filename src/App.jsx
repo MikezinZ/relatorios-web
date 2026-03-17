@@ -294,6 +294,10 @@ function App() {
     return `${dia}/${mes}/${ano}`;
   }
 
+  const limparFiltrosHistorico = () => {
+    setBusca(''); setFiltroDataTela(''); setFiltroCategoriaHist(''); setFiltroStatusHist(''); setFiltroAtendenteHist('');
+  }
+
   const gerarNomeArquivo = () => {
     let nome = "Atendimento";
     if (pdfAtendente) { nome += ` ${pdfAtendente.trim()}`; } else { nome += ` Geral`; }
