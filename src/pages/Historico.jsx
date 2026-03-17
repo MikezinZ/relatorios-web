@@ -59,9 +59,9 @@ const Historico = ({
           <div style={{ flex: 1, minWidth: '150px' }}>
             <select value={filtroStatusHist} onChange={(e) => setFiltroStatusHist(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, fontSize: '14px', boxSizing: 'border-box' }}>
               <option value="">Todos os Status</option>
-              <option value="Resolvido">?? Resolvidos</option>
-              <option value="Andamento">?? Em Andamento</option>
-              <option value="Aberto">?? Abertos</option>
+              <option value="Resolvido">🟢 Resolvidos</option>
+              <option value="Andamento">🟡 Em Andamento</option>
+              <option value="Aberto">🔴 Abertos</option>
             </select>
           </div>
 

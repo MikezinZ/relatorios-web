@@ -118,15 +118,15 @@ const DashboardGestao = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.2)' : '#f1f5f9', padding: '4px 8px', borderRadius: '8px', border: `1px solid ${tema.borda}` }}>
               <CalendarDays size={14} color={tema.texto2} />
               <select 
-                value={periodoEvolucao} 
-                onChange={e => setPeriodoEvolucao(e.target.value)} 
-                style={{ background: 'transparent', border: 'none', color: tema.texto1, fontSize: '12px', fontWeight: 'bold', outline: 'none', cursor: 'pointer' }}
-              >
-                <option value="semanal">Últimos 7 dias</option>
-                <option value="mensal">Últimos 30 dias</option>
-                <option value="semestral">Últimos 6 meses</option>
-                <option value="anual">Últimos 12 meses</option>
-              </select>
+              value={periodoEvolucao} 
+              onChange={e => setPeriodoEvolucao(e.target.value)} 
+              style={{ background: 'transparent', border: 'none', color: tema.texto1, fontSize: '12px', fontWeight: 'bold', outline: 'none', cursor: 'pointer' }}
+            >
+              <option value="semanal" style={{ backgroundColor: isDarkMode ? '#1e293b' : '#fff', color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Últimos 7 dias</option>
+              <option value="mensal" style={{ backgroundColor: isDarkMode ? '#1e293b' : '#fff', color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Últimos 30 dias</option>
+              <option value="semestral" style={{ backgroundColor: isDarkMode ? '#1e293b' : '#fff', color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Últimos 6 meses</option>
+              <option value="anual" style={{ backgroundColor: isDarkMode ? '#1e293b' : '#fff', color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Últimos 12 meses</option>
+            </select>
             </div>
           </div>
 
