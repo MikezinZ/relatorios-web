@@ -17,7 +17,7 @@ const NovoAtendimento = ({
   
   // === ESTADOS DA NOSSA I.A. ===
   const [loadingIA, setLoadingIA] = useState(false);
-  const [loadingMelhoria, setLoadingMelhoria] = useState(false); // Novo estado para o Gourmetizador
+  const [loadingMelhoria, setLoadingMelhoria] = useState(false);
 
   // Filtra as sugestões conforme o usuário digita
   const empresasFiltradas = empresasUnicas.filter(e => e && e.toLowerCase().includes(empresa.toLowerCase()) && e !== empresa);
@@ -40,7 +40,7 @@ const NovoAtendimento = ({
     listStyle: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
   };
 
-  // === FUNÇÃO DA I.A. PARA TRIAGEM ===
+  // === FUNÇÕES DA I.A. ===
   const autoCategorizar = async () => {
     if (!solitProb.trim()) {
       toast.warning('Descreva o problema primeiro para a I.A. conseguir analisar!');
@@ -53,8 +53,6 @@ const NovoAtendimento = ({
         { texto: solitProb },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
-      // Atualiza o select com a resposta exata da I.A.
       setCategoria(res.data.categoria);
       toast.success('✨ Categoria definida pela I.A.!');
     } catch (error) {
@@ -64,7 +62,6 @@ const NovoAtendimento = ({
     }
   };
 
-  // === FUNÇÃO DA I.A. PARA MELHORAR TEXTO ===
   const melhorarTextoResolucao = async () => {
     if (!resolucao.trim()) {
       toast.warning('Escreva algo na resolução primeiro para a I.A. poder melhorar!');
@@ -77,8 +74,6 @@ const NovoAtendimento = ({
         { texto: resolucao },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
-      // Substitui o texto rascunho pelo texto bonitão
       setResolucao(res.data.texto_melhorado);
       toast.success('✨ Texto lapidado com sucesso!');
     } catch (error) {
@@ -86,6 +81,20 @@ const NovoAtendimento = ({
     } finally {
       setLoadingMelhoria(false);
     }
+  };
+
+  // === NOVA FUNÇÃO: TRAVA INTELIGENTE ANTES DE SALVAR ===
+  const validarESalvar = (e) => {
+    e.preventDefault(); // Evita que a página recarregue
+    
+    // Confere se o status é Resolvido mas o texto tá em branco
+    if (status === 'Resolvido' && !resolucao.trim()) {
+      toast.error('Para finalizar o chamado (Resolvido), a Resolução é obrigatória!');
+      return; // Trava o processo aqui
+    }
+    
+    // Se passou na regra acima, chama o handleSubmit original pra mandar pro backend
+    handleSubmit(e);
   };
 
   return (
@@ -97,12 +106,12 @@ const NovoAtendimento = ({
         </h2>
       </div>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* AQUI NÓS TROCAMOS O onSubmit PARA A NOSSA FUNÇÃO COM A TRAVA */}
+      <form onSubmit={validarESalvar} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         
         {/* LINHA 1: Empresa, Funcionário e Data */}
         <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
           
-          {/* CAMPO EMPRESA COM DROP CUSTOMIZADO */}
           <div style={{ flex: 2, minWidth: '250px', position: 'relative' }}>
             <label style={labelStyle}><Building2 size={16} color={tema.texto2}/> Empresa / Cliente *</label>
             <input 
@@ -126,7 +135,6 @@ const NovoAtendimento = ({
             )}
           </div>
 
-          {/* CAMPO FUNCIONÁRIO COM DROP CUSTOMIZADO */}
           <div style={{ flex: 2, minWidth: '200px', position: 'relative' }}>
             <label style={labelStyle}><User size={16} color={tema.texto2}/> Funcionário (Opcional)</label>
             <input 
@@ -151,7 +159,7 @@ const NovoAtendimento = ({
           </div>
 
           <div style={{ flex: 1, minWidth: '150px' }}>
-            <label style={labelStyle}><Calendar size={16} color={tema.texto2}/> Data *</label>
+            <label style={labelStyle}><Calendar size={16} color={tema.texto2}/> Data de Abertura *</label>
             <input type="date" required value={dataAtendimento} onChange={e => setDataAtendimento(e.target.value)} style={inputStyle} />
           </div>
         </div>
@@ -160,7 +168,6 @@ const NovoAtendimento = ({
         <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.1)' : '#f8fafc', padding: '20px', borderRadius: '12px', border: `1px solid ${tema.borda}` }}>
           
           <div style={{ flex: 1, minWidth: '200px' }}>
-            {/* BOTÃO MÁGICO DE CATEGORIZAR AQUI */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <label style={{ ...labelStyle, marginBottom: 0 }}><List size={16} color={tema.texto2}/> Categoria</label>
               <button 
@@ -205,7 +212,6 @@ const NovoAtendimento = ({
             </select>
           </div>
 
-          {/* Toggle de Ticket Bonitão */}
           <div style={{ flex: 1, minWidth: '150px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start' }}>
             <label style={labelStyle}><Ticket size={16} color={tema.texto2}/> Gerar Ticket Kanban?</label>
             <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '10px' }}>
@@ -225,9 +231,11 @@ const NovoAtendimento = ({
         </div>
 
         <div>
-          {/* BOTÃO MÁGICO DO GOURMETIZADOR AQUI */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <label style={{ ...labelStyle, marginBottom: 0 }}><MessageSquare size={16} color={tema.texto2}/> Resolução / Procedimento Adotado *</label>
+            <label style={{ ...labelStyle, marginBottom: 0 }}>
+              <MessageSquare size={16} color={tema.texto2}/> 
+              Resolução / Procedimento Adotado {status === 'Resolvido' ? <span style={{color: '#ef4444'}}>*</span> : <span style={{fontSize: '11px', color: tema.texto2, fontWeight: 'normal'}}>(Opcional enquanto em andamento)</span>}
+            </label>
             <button 
               type="button" 
               onClick={melhorarTextoResolucao} 
@@ -238,7 +246,8 @@ const NovoAtendimento = ({
               {loadingMelhoria ? 'Lapidando...' : 'Melhorar Texto (I.A.)'}
             </button>
           </div>
-          <textarea required placeholder="Como foi resolvido ou qual o próximo passo?" value={resolucao} onChange={e => setResolucao(e.target.value)} rows="4" style={{...inputStyle, resize: 'vertical'}} />
+          {/* REMOVEMOS O required DESSA TEXTAREA */}
+          <textarea placeholder="Como foi resolvido ou qual o próximo passo?" value={resolucao} onChange={e => setResolucao(e.target.value)} rows="4" style={{...inputStyle, resize: 'vertical'}} />
         </div>
 
         <div>
