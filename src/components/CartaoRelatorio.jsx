@@ -224,6 +224,7 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
             <div style={{ display: 'flex', gap: '8px' }}>
               <input 
                 type="text" 
+                maxLength={1000}
                 value={textoAnotacao}
                 onChange={(e) => setTextoAnotacao(e.target.value)}
                 placeholder="Nova atualização..." 

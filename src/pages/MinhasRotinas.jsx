@@ -167,7 +167,7 @@ const MinhasRotinas = ({ tema, isDarkMode, token, tarefas, buscarTarefas, isStaf
                 </div>
               ))}
               <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                <input type="text" placeholder="Novo item..." value={novoItemChecklist[tarefa.id] || ''} onChange={(e) => setNovoItemChecklist({...novoItemChecklist, [tarefa.id]: e.target.value})} onKeyDown={(e) => e.key === 'Enter' && adicionarSubtarefa(tarefa.id)} style={{ flex: 1, padding: '6px 10px', fontSize: '12px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, outline: 'none' }} />
+                <input type="text" maxLength={255} placeholder="Novo item..." value={novoItemChecklist[tarefa.id] || ''} onChange={(e) => setNovoItemChecklist({...novoItemChecklist, [tarefa.id]: e.target.value})} onKeyDown={(e) => e.key === 'Enter' && adicionarSubtarefa(tarefa.id)} style={{ flex: 1, padding: '6px 10px', fontSize: '12px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, outline: 'none' }} />
                 <button className="btn-premium" onClick={() => adicionarSubtarefa(tarefa.id)} style={{ backgroundColor: '#32b8f7', color: 'white', border: 'none', borderRadius: '6px', padding: '0 12px', cursor: 'pointer' }}><Plus size={14} /></button>
               </div>
             </div>
@@ -193,7 +193,7 @@ const MinhasRotinas = ({ tema, isDarkMode, token, tarefas, buscarTarefas, isStaf
               onChange={(e) => { setFiltroChefia(e.target.value); buscarTarefas(e.target.value); }}
               style={{ padding: '8px 12px', borderRadius: '8px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, fontSize: '13px', fontWeight: 'bold', outline: 'none' }}
             >
-              <option value="">👁️ Meu Quadro</option>
+              <option value="">Meu Quadro</option>
               {usuarios.map(u => <option key={u.id} value={u.id}>Quadro de: {u.username}</option>)}
             </select>
           )}
@@ -208,7 +208,7 @@ const MinhasRotinas = ({ tema, isDarkMode, token, tarefas, buscarTarefas, isStaf
         <form onSubmit={criarTarefa} className="fade-in" style={{ marginBottom: '30px', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.2)' : '#f8fafc', padding: '20px', borderRadius: '12px', border: `1px solid ${tema.borda}` }}>
           <h4 style={{ margin: '0 0 15px 0', color: tema.texto1 }}>Criar Nova Tarefa Diária/Recorrente</h4>
           <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginBottom: '15px' }}>
-            <input type="text" placeholder="Título da Tarefa (Ex: Checar Backups)" value={novoTitulo} onChange={e => setNovoTitulo(e.target.value)} style={{ flex: 2, minWidth: '250px', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, outline: 'none' }} />
+            <input type="text" maxLength={255} placeholder="Título da Tarefa (Ex: Checar Backups)" value={novoTitulo} onChange={e => setNovoTitulo(e.target.value)} style={{ flex: 2, minWidth: '250px', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, outline: 'none' }} />
             
             <select value={novaFrequencia} onChange={e => setNovaFrequencia(e.target.value)} style={{ flex: 1, minWidth: '150px', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, outline: 'none' }}>
               <option value="UNICA">Uma única vez</option>
@@ -219,7 +219,7 @@ const MinhasRotinas = ({ tema, isDarkMode, token, tarefas, buscarTarefas, isStaf
 
             <input type="date" value={novaDataVencimento} onChange={e => setNovaDataVencimento(e.target.value)} style={{ flex: 1, minWidth: '150px', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, outline: 'none' }} />
           </div>
-          <input type="text" placeholder="Anotações / Descrição rápida (opcional)" value={novaDescricao} onChange={e => setNovaDescricao(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, boxSizing: 'border-box', marginBottom: '15px', outline: 'none' }} />
+          <input type="text" maxLength={255} placeholder="Anotações / Descrição rápida (opcional)" value={novaDescricao} onChange={e => setNovaDescricao(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, boxSizing: 'border-box', marginBottom: '15px', outline: 'none' }} />
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
             <button type="button" onClick={() => setShowAdd(false)} style={{ backgroundColor: 'transparent', color: tema.texto2, border: `1px solid ${tema.borda}`, padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Cancelar</button>
             <button type="submit" className="btn-premium" style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '8px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Salvar Rotina</button>

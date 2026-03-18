@@ -49,7 +49,7 @@ const Historico = ({
         <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: '200px', position: 'relative' }}>
             <Search size={16} style={{ position: 'absolute', top: '12px', left: '12px', color: tema.texto2 }} />
-            <input type="text" placeholder="Buscar texto (empresa, problema...)" value={busca} onChange={(e) => setBusca(e.target.value)} style={{ width: '100%', padding: '10px 10px 10px 35px', borderRadius: '8px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, fontSize: '14px', boxSizing: 'border-box' }} />
+            <input type="text" maxLength={100} placeholder="Buscar texto (empresa, problema...)" value={busca} onChange={(e) => setBusca(e.target.value)} style={{ width: '100%', padding: '10px 10px 10px 35px', borderRadius: '8px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, fontSize: '14px', boxSizing: 'border-box' }} />
           </div>
 
           <div style={{ flex: 1, minWidth: '150px' }}>
@@ -98,7 +98,7 @@ const Historico = ({
           <span style={{ color: tema.texto1, fontSize: '14px', fontWeight: 'bold' }}><FileDown size={16} style={{ marginRight: '5px', verticalAlign: 'middle' }} /> Exportar:</span>
           <div><label style={{ fontSize: '11px', color: tema.texto2, display: 'block', marginBottom:'2px' }}>Data Inicial</label><input type="date" value={pdfDataInicio} onChange={e => setPdfDataInicio(e.target.value)} style={{ padding: '6px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1 }} /></div>
           <div><label style={{ fontSize: '11px', color: tema.texto2, display: 'block', marginBottom:'2px' }}>Data Final</label><input type="date" value={pdfDataFim} onChange={e => setPdfDataFim(e.target.value)} style={{ padding: '6px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1 }} /></div>
-          <div><label style={{ fontSize: '11px', color: tema.texto2, display: 'block', marginBottom:'2px' }}>Atendente</label><input type="text" placeholder="Nome..." value={pdfAtendente} onChange={e => setPdfAtendente(e.target.value)} style={{ padding: '6px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, width: '100px' }} /></div>
+          <div><label style={{ fontSize: '11px', color: tema.texto2, display: 'block', marginBottom:'2px' }}>Atendente</label><input type="text" maxLength={30} placeholder="Nome..." value={pdfAtendente} onChange={e => setPdfAtendente(e.target.value)} style={{ padding: '6px', borderRadius: '6px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, width: '100px' }} /></div>
 
           <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
             <button className="btn-premium" onClick={gerarPDF} style={{ padding: '8px 12px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>PDF</button>

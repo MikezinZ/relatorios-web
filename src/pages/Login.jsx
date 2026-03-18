@@ -105,6 +105,7 @@ const Login = ({ tema, isDarkMode, setIsDarkMode, handleLogin, username, setUser
                 {/* Removemos o "required" daqui */}
                 <input 
                   type="text" 
+                  maxLength={30}
                   className="modern-input"
                   placeholder="Digite seu usuário..." 
                   value={username} 
@@ -121,6 +122,7 @@ const Login = ({ tema, isDarkMode, setIsDarkMode, handleLogin, username, setUser
                 {/* E removemos o "required" daqui */}
                 <input 
                   type="password" 
+                  maxLength={50}
                   className="modern-input"
                   placeholder="••••••••" 
                   value={password} 
