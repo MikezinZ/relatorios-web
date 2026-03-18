@@ -22,6 +22,7 @@ function App() {
   const [atendenteId, setAtendenteId] = useState(localStorage.getItem('atendenteId') || null)
   const [isStaff, setIsStaff] = useState(localStorage.getItem('isStaff') === 'true')
   const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem('temaEscuro') === 'true')
+  const [isSaving, setIsSaving] = useState(false);
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -202,21 +203,26 @@ function App() {
     }
   }
 
-  const handleSubmit = (e) => {
+ const handleSubmit = (e) => {
     e.preventDefault()
+    
+    // A TRAVA MÁGICA: Se já estiver salvando, ignora o clique!
+    if (isSaving) return; 
+    
     if (atendentesSelecionados.length === 0) { toast.warning("Selecione pelo menos um atendente!"); return; }
 
+    setIsSaving(true); // Tranca a porta!
     const dadosRelatorio = { empresa, funcionario, categoria, status, is_ticket: isTicket, data_atendimento: dataAtendimento, solit_prob: solitProb, resolucao, obs, atendentes: atendentesSelecionados }
     const toastId = toast.loading('Salvando...')
 
     if (editandoId) {
       axios.put(`https://api-ti-relatorios.onrender.com/api/relatorios/${editandoId}/`, dadosRelatorio, { headers: { Authorization: `Bearer ${token}` } })
-        .then(response => { setRelatorios(relatorios.map(r => r.id === editandoId ? response.data : r)); limparFormulario(); toast.success("Atualizado com sucesso!", { id: toastId }); setAbaAtiva('historico'); })
-        .catch(error => toast.error("Erro ao atualizar.", { id: toastId }))
+        .then(response => { setRelatorios(relatorios.map(r => r.id === editandoId ? response.data : r)); limparFormulario(); toast.success("Atualizado com sucesso!", { id: toastId }); setAbaAtiva('historico'); setIsSaving(false); })
+        .catch(error => { toast.error("Erro ao atualizar.", { id: toastId }); setIsSaving(false); })
     } else {
       axios.post('https://api-ti-relatorios.onrender.com/api/relatorios/', dadosRelatorio, { headers: { Authorization: `Bearer ${token}` } })
-        .then(response => { setRelatorios([response.data, ...relatorios]); limparFormulario(); toast.success("Atendimento salvo!", { id: toastId }); })
-        .catch(error => toast.error("Erro ao salvar atendimento.", { id: toastId }))
+        .then(response => { setRelatorios([response.data, ...relatorios]); limparFormulario(); toast.success("Atendimento salvo!", { id: toastId }); setIsSaving(false); })
+        .catch(error => { toast.error("Erro ao salvar atendimento.", { id: toastId }); setIsSaving(false); })
     }
   }
 
@@ -535,6 +541,7 @@ function App() {
             setStatus={setStatus} dataAtendimento={dataAtendimento} setDataAtendimento={setDataAtendimento} isTicket={isTicket} 
             setIsTicket={setIsTicket} solitProb={solitProb} setSolitProb={setSolitProb} resolucao={resolucao} 
             setResolucao={setResolucao} obs={obs} setObs={setObs} limparFormulario={limparFormulario} setAbaAtiva={setAbaAtiva}
+            isSaving={isSaving} /* <--- ADICIONE ESTA LINHA AQUI NO FINAL */
           />
         )}
 

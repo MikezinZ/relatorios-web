@@ -8,7 +8,8 @@ const NovoAtendimento = ({
   empresa, setEmpresa, empresasUnicas, funcionario, setFuncionario, funcionariosDaEmpresa,
   categoria, setCategoria, status, setStatus, dataAtendimento, setDataAtendimento,
   isTicket, setIsTicket, solitProb, setSolitProb, resolucao, setResolucao, obs, setObs,
-  limparFormulario, setAbaAtiva
+  limparFormulario, setAbaAtiva, 
+  isSaving
 }) => {
 
   // === ESTADOS DO NOSSO AUTOCOMPLETAR CUSTOMIZADO ===
@@ -273,8 +274,26 @@ const NovoAtendimento = ({
               Cancelar Edição
             </button>
           )}
-          <button type="submit" className="btn-premium" style={{ padding: '12px 30px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Save size={18} /> {editandoId ? 'Atualizar Atendimento' : 'Salvar Atendimento'}
+          <button 
+            type="submit" 
+            className="btn-premium" 
+            disabled={isSaving}
+            style={{ 
+              padding: '12px 30px', 
+              backgroundColor: isSaving ? (isDarkMode ? '#334155' : '#94a3b8') : '#10b981', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '10px', 
+              cursor: isSaving ? 'wait' : 'pointer', 
+              fontWeight: 'bold', 
+              fontSize: '15px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px',
+              transition: '0.3s'
+            }}
+          >
+            <Save size={18} /> {isSaving ? 'Salvando...' : (editandoId ? 'Atualizar Atendimento' : 'Salvar Atendimento')}
           </button>
         </div>
 
