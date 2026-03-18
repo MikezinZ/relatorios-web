@@ -219,8 +219,8 @@ const DashboardGestao = ({
           <div style={{ backgroundColor: isDarkMode ? 'rgba(0,0,0,0.2)' : '#f8fafc', padding: '20px', borderRadius: '12px', border: `1px solid ${tema.borda}` }}>
             <h4 style={{ margin: '0 0 15px 0', color: tema.texto1 }}>{editandoUsuarioId ? 'Editar Colaborador' : 'Novo Colaborador'}</h4>
             <form onSubmit={handleSalvarUsuario} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <input type="text" placeholder="Nome de usuário (Login)" value={novoUsername} onChange={e => setNovoUsername(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1 }} />
-              <input type="password" placeholder={editandoUsuarioId ? "Nova senha (deixe em branco para manter)" : "Senha de acesso"} value={novaSenha} onChange={e => setNovaSenha(e.target.value)} style={{ padding: '12px', borderRadius: '8px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1 }} />
+              <input type="text" maxLength={30} placeholder="Nome de usuário (Login)" value={novoUsername} onChange={e => setNovoUsername(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1 }} />
+              <input type="password" maxLength={50} placeholder={editandoUsuarioId ? "Nova senha (deixe em branco para manter)" : "Senha de acesso"} value={novaSenha} onChange={e => setNovaSenha(e.target.value)} style={{ padding: '12px', borderRadius: '8px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1 }} />
               
               <div style={{ display: 'flex', gap: '15px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: tema.texto1, fontSize: '14px', cursor: 'pointer' }}>

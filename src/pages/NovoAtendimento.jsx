@@ -115,7 +115,7 @@ const NovoAtendimento = ({
           <div style={{ flex: 2, minWidth: '250px', position: 'relative' }}>
             <label style={labelStyle}><Building2 size={16} color={tema.texto2}/> Empresa / Cliente *</label>
             <input 
-              type="text" required placeholder="Digite o nome da empresa..." value={empresa}
+              type="text" maxLength={100} required placeholder="Digite o nome da empresa..." value={empresa}
               onChange={(e) => { setEmpresa(e.target.value); setShowSugestoesEmpresa(true); }}
               onFocus={() => setShowSugestoesEmpresa(true)}
               onBlur={() => setTimeout(() => setShowSugestoesEmpresa(false), 200)} 
@@ -138,7 +138,7 @@ const NovoAtendimento = ({
           <div style={{ flex: 2, minWidth: '200px', position: 'relative' }}>
             <label style={labelStyle}><User size={16} color={tema.texto2}/> Funcionário (Opcional)</label>
             <input 
-              type="text" placeholder="Quem solicitou?" value={funcionario}
+              type="text" maxLength={100} placeholder="Quem solicitou?" value={funcionario}
               onChange={(e) => { setFuncionario(e.target.value); setShowSugestoesFuncionario(true); }}
               onFocus={() => setShowSugestoesFuncionario(true)}
               onBlur={() => setTimeout(() => setShowSugestoesFuncionario(false), 200)}
@@ -227,7 +227,7 @@ const NovoAtendimento = ({
         {/* TEXTAREAS */}
         <div>
           <label style={labelStyle}><MessageSquare size={16} color={tema.texto2}/> Problema Relatado *</label>
-          <textarea required placeholder="Descreva o que o cliente relatou..." value={solitProb} onChange={e => setSolitProb(e.target.value)} rows="3" style={{...inputStyle, resize: 'vertical'}} />
+          <textarea required maxLength={1500} placeholder="Descreva o que o cliente relatou..." value={solitProb} onChange={e => setSolitProb(e.target.value)} rows="3" style={{...inputStyle, resize: 'vertical'}} />
         </div>
 
         <div>
@@ -246,16 +246,14 @@ const NovoAtendimento = ({
               {loadingMelhoria ? 'Lapidando...' : 'Melhorar Texto (I.A.)'}
             </button>
           </div>
-          {/* REMOVEMOS O required DESSA TEXTAREA */}
-          <textarea placeholder="Como foi resolvido ou qual o próximo passo?" value={resolucao} onChange={e => setResolucao(e.target.value)} rows="4" style={{...inputStyle, resize: 'vertical'}} />
+          <textarea maxLength={1500} placeholder="Como foi resolvido ou qual o próximo passo?" value={resolucao} onChange={e => setResolucao(e.target.value)} rows="4" style={{...inputStyle, resize: 'vertical'}} />
         </div>
 
         <div>
           <label style={{...labelStyle, color: tema.texto2}}>Observações Internas (Opcional)</label>
-          <input type="text" placeholder="Algum detalhe extra?" value={obs} onChange={e => setObs(e.target.value)} style={inputStyle} />
+          <input type="text" maxLength={1000} placeholder="Algum detalhe extra?" value={obs} onChange={e => setObs(e.target.value)} style={inputStyle} />
         </div>
 
-        {/* LINHA 3: Equipe (Checkboxes) */}
         <div>
           <label style={labelStyle}><Users size={16} color={tema.texto2}/> Equipe Responsável *</label>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', padding: '15px', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.1)' : '#f8fafc', borderRadius: '10px', border: `1px solid ${tema.borda}` }}>

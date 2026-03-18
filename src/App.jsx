@@ -504,6 +504,16 @@ function App() {
           .logo-mobile { height: 28px !important; margin-right: 5px !important; }
           .menu-container button { padding: 10px !important; }
         }
+
+        textarea {
+          resize: none !important;
+        }
+
+        p, span, div, h1, h2, h3, h4, strong, text, textarea {
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          word-break: break-word;
+        }
       `}</style>
 
       <div style={{ maxWidth: (abaAtiva === 'tickets' || abaAtiva === 'gestao' || abaAtiva === 'rotinas') ? '98%' : '1000px', margin: '0 auto', transition: 'max-width 0.4s ease' }}>
