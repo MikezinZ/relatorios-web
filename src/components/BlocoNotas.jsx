@@ -62,6 +62,11 @@ const BlocoNotas = ({ isOpen, onClose, tema, isDarkMode, token }) => {
         
         <style>{`
           @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+          
+          /* Esconde a barra de rolagem grossa dentro das notas para ficar mais chique */
+          .nota-scroll::-webkit-scrollbar { width: 4px; }
+          .nota-scroll::-webkit-scrollbar-track { background: transparent; }
+          .nota-scroll::-webkit-scrollbar-thumb { background: ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}; border-radius: 4px; }
         `}</style>
 
         {/* CABEÇALHO */}
@@ -84,11 +89,26 @@ const BlocoNotas = ({ isOpen, onClose, tema, isDarkMode, token }) => {
             </div>
           ) : (
             notas.map(nota => (
-              <div key={nota.id} style={{ backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : '#f8fafc', padding: '15px', borderRadius: '12px', border: `1px solid ${tema.borda}`, position: 'relative', transition: '0.2s' }}>
-                <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: tema.texto1, whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+              <div key={nota.id} style={{ backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : '#f8fafc', padding: '15px', borderRadius: '12px', border: `1px solid ${tema.borda}`, position: 'relative', transition: '0.2s', display: 'flex', flexDirection: 'column' }}>
+                
+                {/* === O SEGREDO TÁ AQUI === 
+                  Usamos o maxHeight pra nota não engolir a gaveta toda e o wordBreak pra não vazar pros lados.
+                */}
+                <div className="nota-scroll" style={{ 
+                  margin: '0 0 10px 0', 
+                  fontSize: '13px', 
+                  color: tema.texto1, 
+                  whiteSpace: 'pre-wrap', 
+                  lineHeight: '1.5',
+                  maxHeight: '150px', 
+                  overflowY: 'auto',
+                  wordWrap: 'break-word',
+                  wordBreak: 'break-word'
+                }}>
                   {nota.conteudo}
-                </p>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px dashed ${tema.borda}`, paddingTop: '10px' }}>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px dashed ${tema.borda}`, paddingTop: '10px', marginTop: 'auto' }}>
                   <span style={{ fontSize: '10px', color: tema.texto2, display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <Clock size={10} /> {new Date(nota.criado_em).toLocaleDateString('pt-BR')}
                   </span>
@@ -103,10 +123,11 @@ const BlocoNotas = ({ isOpen, onClose, tema, isDarkMode, token }) => {
         <div style={{ padding: '20px', borderTop: `1px solid ${tema.borda}`, backgroundColor: isDarkMode ? 'rgba(0,0,0,0.2)' : '#f1f5f9' }}>
           <form onSubmit={criarNota} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <textarea 
+              maxLength={3000} /* O CINTO DE SEGURANÇA! */
               placeholder="Escreva uma nova nota rápida..." 
               value={novoConteudo} 
               onChange={e => setNovoConteudo(e.target.value)}
-              rows="3"
+              rows="4"
               style={{ width: '100%', padding: '12px', borderRadius: '10px', border: `1px solid ${tema.borda}`, backgroundColor: tema.inputBg, color: tema.texto1, fontSize: '13px', resize: 'none', outline: 'none', boxSizing: 'border-box' }}
             />
             <button type="submit" disabled={!novoConteudo.trim()} style={{ padding: '10px', backgroundColor: novoConteudo.trim() ? '#eab308' : (isDarkMode ? '#334155' : '#cbd5e1'), color: '#fff', border: 'none', borderRadius: '10px', cursor: novoConteudo.trim() ? 'pointer' : 'not-allowed', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', transition: '0.2s' }}>
