@@ -76,6 +76,38 @@ function App() {
     localStorage.setItem('temaEscuro', isDarkMode)
   }, [isDarkMode])
 
+  // === NOVO: INTERCEPTADOR DE SESSÃO EXPIRADA (SECURITY) ===
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response, 
+      (error) => {
+        // Se o servidor avisar que o token expirou ou é inválido (Erro 401)
+        if (error.response && error.response.status === 401) {
+          
+          localStorage.removeItem('token');
+          localStorage.removeItem('atendenteId');
+          localStorage.removeItem('isStaff');
+          // Não removemos o temaEscuro para manter a preferência visual
+          
+          setToken('');
+          setAtendenteId(null);
+          setIsStaff(false);
+          
+          toast.error("Sua sessão expirou por segurança. Faça login novamente.");
+          
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, []);
+
   // === NOVA PALETA DE CORES PREMIUM ===
   const tema = {
     fundoMain: isDarkMode ? '#09090b' : '#f1f5f9',
@@ -203,7 +235,7 @@ function App() {
     }
   }
 
- const handleSubmit = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
     
     // A TRAVA MÁGICA: Se já estiver salvando, ignora o clique!
@@ -323,10 +355,6 @@ function App() {
     return dados
   }
 
-  // === EXPORTAÇÕES ATUALIZADAS (TICKET, RESOLUÇÃO E CONCLUSÃO) ===
-
-  // === EXPORTAÇÕES ATUALIZADAS (CORREÇÃO DO STATUS PENDENTE) ===
-
   const gerarPDF = () => {
     const dados = filtrarDadosParaExportacao()
     if (dados.length === 0) { toast.warning("Nenhum relatório encontrado!"); return; }
@@ -339,7 +367,6 @@ function App() {
     const linhas = dados.map(r => {
       let ticketTag = r.is_ticket ? (r.numero_ticket ? `[#${r.numero_ticket}] ` : "[TICKET] ") : "";
       
-      // NOVA LÓGICA INTELIGENTE DE DATA
       let dtConclusao = "Pendente";
       if (r.data_conclusao) {
         dtConclusao = formatarData(r.data_conclusao.split('T')[0]);
@@ -367,7 +394,6 @@ function App() {
     [...dados].reverse().forEach((r, i) => {
       let ticketInfo = r.is_ticket ? (r.numero_ticket ? `(TICKET #${r.numero_ticket})` : "(TICKET)") : "";
       
-      // NOVA LÓGICA INTELIGENTE DE DATA
       let dtConclusao = "Pendente";
       if (r.data_conclusao) {
         dtConclusao = formatarData(r.data_conclusao.split('T')[0]);
@@ -396,7 +422,6 @@ function App() {
     [...dados].reverse().forEach(r => {
       const dataAbertura = formatarData(r.data_atendimento || r.criado_em.split('T')[0]);
       
-      // NOVA LÓGICA INTELIGENTE DE DATA
       let dataConc = "Pendente";
       if (r.data_conclusao) {
         dataConc = formatarData(r.data_conclusao.split('T')[0]);
@@ -541,7 +566,7 @@ function App() {
             setStatus={setStatus} dataAtendimento={dataAtendimento} setDataAtendimento={setDataAtendimento} isTicket={isTicket} 
             setIsTicket={setIsTicket} solitProb={solitProb} setSolitProb={setSolitProb} resolucao={resolucao} 
             setResolucao={setResolucao} obs={obs} setObs={setObs} limparFormulario={limparFormulario} setAbaAtiva={setAbaAtiva}
-            isSaving={isSaving} /* <--- ADICIONE ESTA LINHA AQUI NO FINAL */
+            isSaving={isSaving} 
           />
         )}
 
