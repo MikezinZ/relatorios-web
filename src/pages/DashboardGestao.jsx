@@ -14,6 +14,32 @@ const DashboardGestao = ({
   // === NOVO ESTADO: Controle do período do Gráfico de Evolução ===
   const [periodoEvolucao, setPeriodoEvolucao] = useState('semanal');
 
+  // === FUNÇÃO DE RESGATE DO BANCO DE DADOS ===
+  const fazerBackupDoBanco = async () => {
+    const toastId = toast.loading('Compactando banco de dados no servidor...');
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('https://api-ti-relatorios.onrender.com/api/backup/', {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob' // Isso avisa o Axios que estamos baixando um arquivo, não um texto comum!
+      });
+      
+      // Cria um link invisível na tela e clica nele para baixar
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'backup_globalnet.json');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      toast.success('Backup realizado com sucesso! Guarde este arquivo.', { id: toastId });
+    } catch (error) {
+      console.error(error);
+      toast.error('Erro ao gerar o backup. Verifique se você é administrador.', { id: toastId });
+    }
+  };
+
   // === CALCULANDO DADOS DO GRÁFICO DINÂMICO ===
   const dadosEvolucao = useMemo(() => {
     let dataMap = {};
@@ -80,6 +106,14 @@ const DashboardGestao = ({
         <h2 style={{ color: tema.texto1, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
           <ShieldCheck size={26} color="#10b981" /> Painel de Gestão e Estatísticas
         </h2>
+
+        <button 
+          onClick={fazerBackupDoBanco}
+          className="btn-premium" 
+          style={{ backgroundColor: '#8b5cf6', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 10px rgba(139, 92, 246, 0.3)' }}
+        >
+          Fazer Backup Completo
+        </button>
       </div>
 
       {/* === LINHA 1: KPI'S (CARDS DE RESUMO) === */}
