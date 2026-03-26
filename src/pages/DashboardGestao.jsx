@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Users, BarChart3, TrendingUp, ShieldCheck, UserPlus, Edit, Trash2, CheckCircle2, AlertCircle, Clock3, CalendarDays } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, CartesianGrid } from 'recharts';
+import axios from 'axios';
+import { toast } from 'sonner';
 
 const DashboardGestao = ({
   tema, isDarkMode, relatorios, relatoriosHoje, empresasUnicas, 
