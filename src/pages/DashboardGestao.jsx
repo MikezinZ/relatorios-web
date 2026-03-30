@@ -21,7 +21,7 @@ const DashboardGestao = ({
     const toastId = toast.loading('Compactando banco de dados no servidor...');
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('https://api-ti-relatorios.onrender.com/api/backup/', {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/backup/`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob' // Isso avisa o Axios que estamos baixando um arquivo, não um texto comum!
       });

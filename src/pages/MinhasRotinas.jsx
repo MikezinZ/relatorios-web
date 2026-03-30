@@ -27,7 +27,7 @@ const MinhasRotinas = ({ tema, isDarkMode, token, tarefas, buscarTarefas, isStaf
     e.preventDefault();
     if (!novoTitulo) return toast.warning("O título é obrigatório!");
 
-    axios.post('https://api-ti-relatorios.onrender.com/api/tarefas/', 
+    axios.post(`${import.meta.env.VITE_API_URL}/api/tarefas/`, 
       { 
         titulo: novoTitulo, 
         descricao: novaDescricao, 
@@ -45,7 +45,7 @@ const MinhasRotinas = ({ tema, isDarkMode, token, tarefas, buscarTarefas, isStaf
   };
 
   const setStatusTarefa = (id, novoStatus) => {
-    axios.patch(`https://api-ti-relatorios.onrender.com/api/tarefas/${id}/`, 
+    axios.patch(`${import.meta.env.VITE_API_URL}/api/tarefas/${id}/`, 
       { status: novoStatus }, { headers: { Authorization: `Bearer ${token}` } }
     ).then(() => {
       buscarTarefas(filtroChefia);
@@ -58,7 +58,7 @@ const MinhasRotinas = ({ tema, isDarkMode, token, tarefas, buscarTarefas, isStaf
       action: {
         label: 'Sim, Excluir',
         onClick: () => {
-          axios.delete(`https://api-ti-relatorios.onrender.com/api/tarefas/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
+          axios.delete(`${import.meta.env.VITE_API_URL}/api/tarefas/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
             .then(() => { toast.success("Rotina apagada!"); buscarTarefas(filtroChefia); })
             .catch(() => toast.error("Erro ao apagar rotina."));
         }
@@ -73,7 +73,7 @@ const MinhasRotinas = ({ tema, isDarkMode, token, tarefas, buscarTarefas, isStaf
     const texto = novoItemChecklist[tarefaId];
     if (!texto) return;
     
-    axios.post('https://api-ti-relatorios.onrender.com/api/subtarefas/', 
+    axios.post(`${import.meta.env.VITE_API_URL}/api/subtarefas/`, 
       { tarefa: tarefaId, texto: texto, concluida: false },
       { headers: { Authorization: `Bearer ${token}` } }
     ).then(() => {
@@ -83,13 +83,13 @@ const MinhasRotinas = ({ tema, isDarkMode, token, tarefas, buscarTarefas, isStaf
   };
 
   const toggleSubtarefa = (subId, statusAtual) => {
-    axios.patch(`https://api-ti-relatorios.onrender.com/api/subtarefas/${subId}/`, 
+    axios.patch(`${import.meta.env.VITE_API_URL}/api/subtarefas/${subId}/`, 
       { concluida: !statusAtual }, { headers: { Authorization: `Bearer ${token}` } }
     ).then(() => buscarTarefas(filtroChefia));
   };
 
   const apagarSubtarefa = (subId) => {
-    axios.delete(`https://api-ti-relatorios.onrender.com/api/subtarefas/${subId}/`, { headers: { Authorization: `Bearer ${token}` } })
+    axios.delete(`${import.meta.env.VITE_API_URL}/api/subtarefas/${subId}/`, { headers: { Authorization: `Bearer ${token}` } })
       .then(() => buscarTarefas(filtroChefia));
   };
 

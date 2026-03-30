@@ -102,7 +102,7 @@ const CartaoRelatorio = ({ relatorio, tema, isDarkMode, formatarData, iniciarEdi
     // 2. Disparamos pro nosso Backend em Django
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post('https://api-ti-relatorios.onrender.com/api/ia/resumo/', 
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/ia/resumo/`, 
         { texto: contexto },
         { headers: { Authorization: `Bearer ${token}` } }
       );

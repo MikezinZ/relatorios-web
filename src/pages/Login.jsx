@@ -1,6 +1,6 @@
 import React from 'react';
 import { Sun, Moon, User, Lock, LogIn, LayoutDashboard, ShieldCheck } from 'lucide-react';
-import { toast } from 'sonner'; // <--- IMPORTAMOS O TOAST AQUI!
+import { toast } from 'sonner'; 
 import logoImg from '../assets/logo_Globalnet.png';
 
 const Login = ({ tema, isDarkMode, setIsDarkMode, handleLogin, username, setUsername, password, setPassword }) => {

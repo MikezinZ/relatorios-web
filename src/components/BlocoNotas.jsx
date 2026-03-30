@@ -13,7 +13,7 @@ const BlocoNotas = ({ isOpen, onClose, tema, isDarkMode, token }) => {
   }, [isOpen, token]);
 
   const buscarNotas = () => {
-    axios.get('https://api-ti-relatorios.onrender.com/api/notas/', { headers: { Authorization: `Bearer ${token}` } })
+    axios.get(`${import.meta.env.VITE_API_URL}/api/notas/`, { headers: { Authorization: `Bearer ${token}` } })
       .then(res => setNotas(res.data))
       .catch(err => console.error("Erro ao buscar notas:", err));
   };
@@ -22,7 +22,7 @@ const BlocoNotas = ({ isOpen, onClose, tema, isDarkMode, token }) => {
     e.preventDefault();
     if (!novoConteudo.trim()) return;
 
-    axios.post('https://api-ti-relatorios.onrender.com/api/notas/', 
+    axios.post(`${import.meta.env.VITE_API_URL}/api/notas/`, 
       { conteudo: novoConteudo },
       { headers: { Authorization: `Bearer ${token}` } }
     ).then(() => {
@@ -33,7 +33,7 @@ const BlocoNotas = ({ isOpen, onClose, tema, isDarkMode, token }) => {
   };
 
   const apagarNota = (id) => {
-    axios.delete(`https://api-ti-relatorios.onrender.com/api/notas/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
+    axios.delete(`${import.meta.env.VITE_API_URL}/api/notas/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
       .then(() => {
         buscarNotas();
         toast.success("Nota descartada.");

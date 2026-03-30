@@ -50,7 +50,7 @@ const NovoAtendimento = ({
     setLoadingIA(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post('https://api-ti-relatorios.onrender.com/api/ia/categorizar/', 
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/ia/categorizar/`, 
         { texto: solitProb },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -71,7 +71,7 @@ const NovoAtendimento = ({
     setLoadingMelhoria(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post('https://api-ti-relatorios.onrender.com/api/ia/melhorar-texto/', 
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/ia/melhorar-texto/`, 
         { texto: resolucao },
         { headers: { Authorization: `Bearer ${token}` } }
       );

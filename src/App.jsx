@@ -124,7 +124,7 @@ function App() {
   const handleLogin = (e) => {
     e.preventDefault()
     const toastId = toast.loading('Acessando o sistema...')
-    axios.post('https://api-ti-relatorios.onrender.com/api/token/', { username, password })
+    axios.post(`${import.meta.env.VITE_API_URL}/api/token/`, { username, password })
       .then(response => {
         const accessToken = response.data.access
         const decoded = jwtDecode(accessToken)
@@ -148,7 +148,7 @@ function App() {
   useEffect(() => {
     if (token) {
       setIsLoading(true);
-      axios.get('https://api-ti-relatorios.onrender.com/api/relatorios/', { headers: { Authorization: `Bearer ${token}` } })
+      axios.get(`${import.meta.env.VITE_API_URL}/api/relatorios/`, { headers: { Authorization: `Bearer ${token}` } })
         .then(response => {
           const dados = response.data.results ? response.data.results : response.data;
           setRelatorios(dados);
@@ -169,7 +169,7 @@ function App() {
   }, [token, atendenteId])
 
   const buscarTarefas = (usuarioIdFiltro = null) => {
-    let url = 'https://api-ti-relatorios.onrender.com/api/tarefas/';
+    let url = `${import.meta.env.VITE_API_URL}/api/tarefas/`;
     if (usuarioIdFiltro) url += `?usuario_id=${usuarioIdFiltro}`;
 
     axios.get(url, { headers: { Authorization: `Bearer ${token}` } })
@@ -183,7 +183,7 @@ function App() {
   };
 
   const buscarUsuarios = () => {
-    axios.get('https://api-ti-relatorios.onrender.com/api/usuarios/', { headers: { Authorization: `Bearer ${token}` } })
+    axios.get(`${import.meta.env.VITE_API_URL}/api/usuarios/`, { headers: { Authorization: `Bearer ${token}` } })
       .then(response => setUsuarios(response.data))
       .catch(error => console.error(error))
   }
@@ -194,12 +194,12 @@ function App() {
     if (novaSenha) payload.password = novaSenha
 
     if (editandoUsuarioId) {
-      axios.put(`https://api-ti-relatorios.onrender.com/api/usuarios/${editandoUsuarioId}/`, payload, { headers: { Authorization: `Bearer ${token}` } })
+      axios.put(`${import.meta.env.VITE_API_URL}/api/usuarios/${editandoUsuarioId}/`, payload, { headers: { Authorization: `Bearer ${token}` } })
         .then(response => { toast.success("Usuário atualizado com sucesso!"); limparFormularioUsuario(); buscarUsuarios(); })
         .catch(error => toast.error("Erro ao atualizar usuário."))
     } else {
       if (!novaSenha) { toast.warning("Senha é obrigatória!"); return; }
-      axios.post('https://api-ti-relatorios.onrender.com/api/usuarios/', payload, { headers: { Authorization: `Bearer ${token}` } })
+      axios.post(`${import.meta.env.VITE_API_URL}/api/usuarios/`, payload, { headers: { Authorization: `Bearer ${token}` } })
         .then(response => { toast.success("Atendente criado com sucesso!"); limparFormularioUsuario(); buscarUsuarios(); })
         .catch(error => toast.error("Erro! Verifique se esse nome já não existe."))
     }
@@ -215,7 +215,7 @@ function App() {
       action: {
         label: 'Sim, Apagar Tudo',
         onClick: () => {
-          axios.delete(`https://api-ti-relatorios.onrender.com/api/usuarios/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
+          axios.delete(`${import.meta.env.VITE_API_URL}/api/usuarios/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
             .then(() => { toast.success("Conta e relatórios apagados."); buscarUsuarios(); })
             .catch(error => toast.error("Erro ao apagar usuário."))
         }
@@ -248,11 +248,11 @@ function App() {
     const toastId = toast.loading('Salvando...')
 
     if (editandoId) {
-      axios.put(`https://api-ti-relatorios.onrender.com/api/relatorios/${editandoId}/`, dadosRelatorio, { headers: { Authorization: `Bearer ${token}` } })
+      axios.put(`${import.meta.env.VITE_API_URL}/api/relatorios/${editandoId}/`, dadosRelatorio, { headers: { Authorization: `Bearer ${token}` } })
         .then(response => { setRelatorios(relatorios.map(r => r.id === editandoId ? response.data : r)); limparFormulario(); toast.success("Atualizado com sucesso!", { id: toastId }); setAbaAtiva('historico'); setIsSaving(false); })
         .catch(error => { toast.error("Erro ao atualizar.", { id: toastId }); setIsSaving(false); })
     } else {
-      axios.post('https://api-ti-relatorios.onrender.com/api/relatorios/', dadosRelatorio, { headers: { Authorization: `Bearer ${token}` } })
+      axios.post(`${import.meta.env.VITE_API_URL}/api/relatorios/`, dadosRelatorio, { headers: { Authorization: `Bearer ${token}` } })
         .then(response => { setRelatorios([response.data, ...relatorios]); limparFormulario(); toast.success("Atendimento salvo!", { id: toastId }); setIsSaving(false); })
         .catch(error => { toast.error("Erro ao salvar atendimento.", { id: toastId }); setIsSaving(false); })
     }
@@ -276,7 +276,7 @@ function App() {
       action: {
         label: 'Sim, Excluir',
         onClick: () => {
-          axios.delete(`https://api-ti-relatorios.onrender.com/api/relatorios/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
+          axios.delete(`${import.meta.env.VITE_API_URL}/api/relatorios/${id}/`, { headers: { Authorization: `Bearer ${token}` } })
             .then(() => { setRelatorios(relatorios.filter(r => r.id !== id)); toast.success("Relatório excluído."); })
             .catch(() => toast.error("Erro ao apagar."))
         }
@@ -296,7 +296,7 @@ function App() {
     if (!texto.trim()) return;
     const toastId = toast.loading('Salvando work note...');
     
-    axios.post('https://api-ti-relatorios.onrender.com/api/anotacoes/', 
+    axios.post(`${import.meta.env.VITE_API_URL}/api/anotacoes/`, 
       { relatorio: relatorioId, texto: texto }, 
       { headers: { Authorization: `Bearer ${token}` } }
     )
@@ -315,7 +315,7 @@ function App() {
   const moverTicket = (id, novoStatus) => {
     setRelatorios(relatorios.map(r => r.id === id ? { ...r, status: novoStatus } : r));
 
-    axios.patch(`https://api-ti-relatorios.onrender.com/api/relatorios/${id}/`, 
+    axios.patch(`${import.meta.env.VITE_API_URL}/api/relatorios/${id}/`, 
       { status: novoStatus }, 
       { headers: { Authorization: `Bearer ${token}` } }
     ).then(() => {

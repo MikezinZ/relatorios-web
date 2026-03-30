@@ -6,10 +6,9 @@ import SkeletonCard from '../components/SkeletonCard';
 const RadarTickets = ({ 
   tema, isDarkMode, animationParent, isLoading, relatorios, 
   formatarData, iniciarEdicao, apagarRelatorio,
-  adicionarAnotacao, moverTicket // <--- Recebe a função nova aqui
+  adicionarAnotacao, moverTicket 
 }) => {
   
-  // Controle de qual coluna está sendo "sobrevoada" pelo mouse para dar um efeito visual
   const [colunaHover, setColunaHover] = useState(null);
 
   const tickets = relatorios.filter(r => r.is_ticket);
@@ -23,7 +22,7 @@ const RadarTickets = ({
   };
 
   const handleDragOver = (e, statusName) => {
-    e.preventDefault(); // Necessário para o HTML permitir soltar o item aqui
+    e.preventDefault(); 
     setColunaHover(statusName);
   };
 
@@ -33,7 +32,7 @@ const RadarTickets = ({
 
   const handleDrop = (e, novoStatus) => {
     e.preventDefault();
-    setColunaHover(null); // Tira o efeito de hover
+    setColunaHover(null); 
     
     const ticketId = e.dataTransfer.getData('ticketId');
     if (ticketId && moverTicket) {
@@ -53,7 +52,7 @@ const RadarTickets = ({
       : `1px solid ${tema.borda}`, 
     display: 'flex', flexDirection: 'column', gap: '15px',
     transition: 'all 0.2s ease',
-    minHeight: '60vh' // Garante que você pode soltar mesmo se a coluna estiver vazia
+    minHeight: '60vh' 
   });
 
   return (
